@@ -1,0 +1,107 @@
+2026-03-25T09:53:40.677-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] com.api.BackendCelarisDisApplication     : Starting BackendCelarisDisApplication using Java 17.0.13 with PID 3560 (E:\SpringBoot\workspace\BackendCelarisDis\target\classes started by diazs in E:\SpringBoot\workspace\BackendCelarisDis)
+2026-03-25T09:53:40.689-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] com.api.BackendCelarisDisApplication     : The following 1 profile is active: "local"
+2026-03-25T09:53:40.813-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : Devtools property defaults active! Set 'spring.devtools.add-properties' to 'false' to disable
+2026-03-25T09:53:40.813-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] .e.DevToolsPropertyDefaultsPostProcessor : For additional web related logging consider setting the 'logging.level.web' property to 'DEBUG'
+2026-03-25T09:53:42.263-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-03-25T09:53:42.411-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 124 ms. Found 8 JPA repository interfaces.
+2026-03-25T09:53:43.724-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-03-25T09:53:43.757-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-03-25T09:53:43.759-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.15]
+2026-03-25T09:53:43.885-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 3071 ms
+2026-03-25T09:53:44.168-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-03-25T09:53:44.299-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.1.Final
+2026-03-25T09:53:45.558-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-03-25T09:53:45.635-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-03-25T09:53:45.993-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@c26e9aa
+2026-03-25T09:53:45.999-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-03-25T09:53:46.112-03:00  WARN 3560 --- [BackendCelarisDis] [restartedMain] org.hibernate.orm.core                   : HHH000511: The 5.5.5 version for [org.hibernate.dialect.MySQLDialect] is no longer supported, hence certain features may not work properly.The minimum supported version is 8.0.0. Check the community dialects project for available legacy versions.
+2026-03-25T09:53:46.124-03:00  WARN 3560 --- [BackendCelarisDis] [restartedMain] org.hibernate.orm.deprecation            : HHH90000025: MySQLDialect does not need to be specified explicitly using 'hibernate.dialect' (remove the property setting and it will be selected by default)
+2026-03-25T09:53:46.167-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:mysql://localhost:3306/celaris]
+	Database driver: MySQL Connector/J
+	Database dialect: MySQLDialect
+	Database version: 5.5.5
+	Default catalog/schema: celaris/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: REPEATABLE_READ [default REPEATABLE_READ]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-03-25T09:53:47.930-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-03-25T09:53:47.951-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-03-25T09:53:48.073-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-03-25T09:53:49.101-03:00  WARN 3560 --- [BackendCelarisDis] [restartedMain] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-03-25T09:53:49.237-03:00  WARN 3560 --- [BackendCelarisDis] [restartedMain] .s.a.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: 72946d03-c2fe-4680-b5e2-6cec4cf74c93
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-03-25T09:53:49.254-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-03-25T09:53:49.493-03:00 DEBUG 3560 --- [BackendCelarisDis] [restartedMain] o.s.s.web.DefaultSecurityFilterChain     : Will secure any request with filters: DisableEncodeUrlFilter, WebAsyncManagerIntegrationFilter, SecurityContextHolderFilter, HeaderWriterFilter, LogoutFilter, FirebaseAuthFilter, RequestCacheAwareFilter, SecurityContextHolderAwareRequestFilter, AnonymousAuthenticationFilter, SessionManagementFilter, ExceptionTranslationFilter, AuthorizationFilter
+2026-03-25T09:53:49.703-03:00 TRACE 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 
+	c.a.a.AuthController:
+	{POST [/auth/register]}: register(HttpServletRequest)
+	{GET [/auth/me]}: me(HttpServletRequest)
+	{PUT [/auth/me]}: updateMe(FormularioRequest,HttpServletRequest)
+	{POST [/auth/formulario]}: formulario(FormularioRequest,HttpServletRequest)
+	{POST [/auth/push-token]}: savePushToken(Map,HttpServletRequest)
+	{DELETE [/auth/borrar-usuario]}: borrar(HttpServletRequest)
+	{POST [/auth/login]}: login(HttpServletRequest)
+2026-03-25T09:53:49.714-03:00 TRACE 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 
+	c.a.a.MercadoPagoControler:
+	{POST [/mercado-pago/crear-pago]}: crearPago(PagoMp,HttpServletRequest)
+	{POST [/mercado-pago/webhook]}: webhook(Map)
+2026-03-25T09:53:49.714-03:00 TRACE 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 
+	c.a.a.PlanController:
+	{GET [/planes]}: getPlanes()
+	{GET [/planes/mi-plan]}: getMiPlan(HttpServletRequest)
+	{POST [/planes/cancelar]}: cancelarPlan(HttpServletRequest)
+	{POST [/planes/trial]}: asignarTrial(HttpServletRequest)
+2026-03-25T09:53:49.714-03:00 TRACE 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 
+	c.a.a.SoporteController:
+	{POST [/soporte]}: enviar(HttpServletRequest,SoporteRequest)
+2026-03-25T09:53:49.727-03:00 TRACE 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 
+	c.a.c.conClientes:
+	{GET [/control/cliente]}: getAll(HttpServletRequest)
+2026-03-25T09:53:49.727-03:00 TRACE 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 
+	c.a.c.conDeuda:
+	{GET [/control/deudas]}: getDeudores(HttpServletRequest)
+	{GET [/control/deudas/{idCliente}/historial]}: getHistorial(HttpServletRequest,Integer)
+	{PATCH [/control/deudas/pagar]}: pagar(HttpServletRequest,PagoDeudaRequest)
+2026-03-25T09:53:49.734-03:00 TRACE 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 
+	c.a.c.conProductos:
+	{PUT [/control/productos/{nombre}]}: update(HttpServletRequest,String,productos)
+	{DELETE [/control/productos/{nombre}]}: delete(HttpServletRequest,String)
+	{POST [/control/productos]}: create(HttpServletRequest,productos)
+	{GET [/control/productos]}: getAll(HttpServletRequest)
+2026-03-25T09:53:49.734-03:00 TRACE 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 
+	c.a.c.conTipoPago:
+	{GET [/control/tipoPago]}: tipoPago()
+2026-03-25T09:53:49.742-03:00 TRACE 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 
+	c.a.c.conVentas:
+	{DELETE [/control/ventas/{id}]}: delete(Integer,HttpServletRequest)
+	{POST [/control/ventas]}: create(HttpServletRequest,VentaRequest)
+	{GET [/control/ventas]}: getAll(HttpServletRequest)
+	{GET [/control/ventas/historial]}: getHistorial(HttpServletRequest,LocalDate,String)
+	{GET [/control/ventas/reservadas]}: getReservadas(HttpServletRequest)
+	{GET [/control/ventas/top-productos]}: getTop(HttpServletRequest)
+	{PATCH [/control/ventas/{id}/entregar]}: entregar(Integer,HttpServletRequest,ConfirmarEntregaRequest)
+	{PUT [/control/ventas/{id}/productos]}: editarProductos(Integer,List,HttpServletRequest)
+2026-03-25T09:53:49.742-03:00 TRACE 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 
+	o.s.b.w.a.e.BasicErrorController:
+	{ [/error]}: error(HttpServletRequest)
+	{ [/error], produces [text/html]}: errorHtml(HttpServletRequest,HttpServletResponse)
+2026-03-25T09:53:49.758-03:00 DEBUG 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerMapping : 33 mappings in 'requestMappingHandlerMapping'
+2026-03-25T09:53:49.818-03:00 DEBUG 3560 --- [BackendCelarisDis] [restartedMain] o.s.w.s.handler.SimpleUrlHandlerMapping  : Patterns [/webjars/**, /**] in 'resourceHandlerMapping'
+2026-03-25T09:53:49.868-03:00 DEBUG 3560 --- [BackendCelarisDis] [restartedMain] s.w.s.m.m.a.RequestMappingHandlerAdapter : ControllerAdvice beans: 0 @ModelAttribute, 0 @InitBinder, 2 RequestBodyAdvice, 1 ResponseBodyAdvice
+2026-03-25T09:53:49.948-03:00 DEBUG 3560 --- [BackendCelarisDis] [restartedMain] .m.m.a.ExceptionHandlerExceptionResolver : ControllerAdvice beans: 0 @ExceptionHandler, 1 ResponseBodyAdvice
+2026-03-25T09:53:50.162-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] o.s.boot.tomcat.TomcatWebServer          : Tomcat started on port 8080 (http) with context path '/Api-Backend'
+2026-03-25T09:53:50.179-03:00  INFO 3560 --- [BackendCelarisDis] [restartedMain] com.api.BackendCelarisDisApplication     : Started BackendCelarisDisApplication in 10.328 seconds (process running for 12.362)
+2026-03-25T10:01:28.513-03:00  INFO 3560 --- [BackendCelarisDis] [RMI TCP Connection(18)-127.0.0.1] inMXBeanRegistrar$SpringApplicationAdmin : Application shutdown requested.
+2026-03-25T10:01:28.521-03:00  INFO 3560 --- [BackendCelarisDis] [RMI TCP Connection(18)-127.0.0.1] o.s.boot.tomcat.GracefulShutdown         : Commencing graceful shutdown. Waiting for active requests to complete
+2026-03-25T10:01:28.797-03:00  INFO 3560 --- [BackendCelarisDis] [tomcat-shutdown] o.s.boot.tomcat.GracefulShutdown         : Graceful shutdown complete
+2026-03-25T10:01:28.843-03:00  INFO 3560 --- [BackendCelarisDis] [RMI TCP Connection(18)-127.0.0.1] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-03-25T10:01:28.850-03:00  INFO 3560 --- [BackendCelarisDis] [RMI TCP Connection(18)-127.0.0.1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-03-25T10:01:28.864-03:00  INFO 3560 --- [BackendCelarisDis] [RMI TCP Connection(18)-127.0.0.1] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
