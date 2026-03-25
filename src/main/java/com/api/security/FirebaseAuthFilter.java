@@ -48,11 +48,12 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
 			    // Para register, puede no existir todavía
 			    Optional<User> userOpt = userRepository.findByFirebaseUid(firebaseUid);
 
-			    if (userOpt.isPresent()) {
+//			    if (userOpt.isPresent()) {
 			        UsernamePasswordAuthenticationToken authentication =
-			            new UsernamePasswordAuthenticationToken(userOpt.get(), null, List.of());
+			            new UsernamePasswordAuthenticationToken(firebaseUid, null, List.of());
+			        
 			        SecurityContextHolder.getContext().setAuthentication(authentication);
-			    }
+//			    }
 			    // Si no existe, dejamos pasar igual para que /register lo cree
 
 			} catch (FirebaseAuthException e) {
