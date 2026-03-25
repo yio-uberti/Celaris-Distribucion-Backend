@@ -27,6 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 @RequestMapping("/mercado-pago")
 public class MercadoPagoControler {
 
+	//Variables
 	@Autowired
 	private UserRepository userRepository;
 	@Autowired
