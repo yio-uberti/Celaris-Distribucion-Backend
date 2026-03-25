@@ -8,6 +8,6 @@ import com.mercadopago.MercadoPagoConfig;
 public class MercadoPagoConfigInit {
 
 	public MercadoPagoConfigInit() {
-        MercadoPagoConfig.setAccessToken("TEST-7287397855536710-120117-6dce583016b00defca5345e2d18b942b-543427993");
+        MercadoPagoConfig.setAccessToken("APP_USR-7287397855536710-120117-87ceb2b05bc67aefd0740dcf98e0e895-543427993");
     }
 }
