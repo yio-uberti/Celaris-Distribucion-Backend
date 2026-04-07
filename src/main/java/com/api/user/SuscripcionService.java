@@ -1,0 +1,67 @@
+package com.api.user;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+
+import com.api.repositorio.PlanRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class SuscripcionService {
+	private final SuscripcionRepository suscripcionRepo;
+	private final PlanRepository planRepo;
+	private final UserRepository userRepo;
+
+	public boolean yaUsoTrial(User user) {
+		return suscripcionRepo.existsByUserAndUsoTrialTrue(user);
+	}
+
+	public Suscripcion asignarTrial(User user) {
+		Plan premium = planRepo.findById(2).orElseThrow(() -> new RuntimeException("Plan PREMIUM no encontrado"));
+
+		Suscripcion trial = new Suscripcion();
+		trial.setUser(user);
+		trial.setPlan(premium);
+		trial.setEstado("ACTIVA");
+		trial.setUsoTrial(true);
+		trial.setInicio(LocalDateTime.now());
+		trial.setVencimiento(LocalDateTime.now().plusDays(30));
+
+		return suscripcionRepo.save(trial);
+	}
+
+	public void vencerSuscripcionesExpiradas() {
+		List<Suscripcion> activas = suscripcionRepo.findByEstado("ACTIVA");
+		LocalDateTime ahora = LocalDateTime.now();
+
+		for (Suscripcion s : activas) {
+			if (s.getVencimiento() != null && s.getVencimiento().isBefore(ahora)) {
+				s.setEstado("VENCIDA");
+				suscripcionRepo.save(s);
+
+				// Bajar al usuario a FREE también
+				Plan free = planRepo.findById(1).orElseThrow();
+				User user = s.getUser();
+				user.setPlan(free);
+				user.setTrialExpira(null);
+				userRepo.save(user);
+			}
+		}
+	}
+
+	public Optional<Suscripcion> getSuscripcionActiva(User user) {
+		return suscripcionRepo.findByUserAndEstado(user, "ACTIVA");
+	}
+
+	public void cancelarSuscripcionActiva(User user) {
+		getSuscripcionActiva(user).ifPresent(s -> {
+			s.setEstado("CANCELADA");
+			suscripcionRepo.save(s);
+		});
+	}
+}

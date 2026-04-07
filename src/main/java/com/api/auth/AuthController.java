@@ -17,6 +17,7 @@ import com.api.repositorio.repoClientes;
 import com.api.repositorio.repoProducto;
 import com.api.repositorio.repoVentas;
 import com.api.tenant.TenantRepository;
+import com.api.user.SuscripcionRepository;
 import com.api.user.User;
 import com.api.user.UserRepository;
 
@@ -39,7 +40,8 @@ public class AuthController {
 	private repoProducto productoRepository;
 	@Autowired
 	private TenantRepository tenantRepository;
-	
+	@Autowired
+	private SuscripcionRepository suscripcionRepository;
 
 //	Metodo para traer datos del usuario
 	@GetMapping("/me")
@@ -92,17 +94,31 @@ public class AuthController {
 	@DeleteMapping("/borrar-usuario")
 	public ResponseEntity<?> borrar(HttpServletRequest request) {
 		String firebaseUid = (String) request.getAttribute("firebaseUid");
-		
+
 		User user = userRepository.findByFirebaseUid(firebaseUid)
 				.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-		
+
 		Long tenantId = user.getTenantId();
+		suscripcionRepository.deleteByUser(user);
 		ventaRepository.deleteAllByTenantId(tenantId);
-	    clienteRepository.deleteAllByTenantId(tenantId);
-	    productoRepository.deleteAllByTenantId(tenantId);
-	    userRepository.delete(user);
-	    tenantRepository.deleteById(tenantId);
-		
+		clienteRepository.deleteAllByTenantId(tenantId);
+		productoRepository.deleteAllByTenantId(tenantId);
+		userRepository.delete(user);
+		tenantRepository.deleteById(tenantId);
+
 		return null;
+	}
+
+	@DeleteMapping("/auth/cleanup")
+	public ResponseEntity<?> cleanup(HttpServletRequest request) {
+		// Solo llega acá si el token Firebase es válido
+		// Si el UID no existe en BD → no hay nada que limpiar
+		// Si existe → eliminarlo (caso donde se re-registró en Firebase)
+		String uid = (String) request.getAttribute("firebaseUid");
+		userRepository.findByFirebaseUid(uid).ifPresent(user -> {
+			tenantRepository.deleteById(user.getTenantId());
+			userRepository.delete(user);
+		});
+		return ResponseEntity.ok().build();
 	}
 }

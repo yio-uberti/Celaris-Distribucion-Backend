@@ -30,8 +30,11 @@ public class AuthService {
         
         if (firebaseUid == null || email == null) return false ;
 
+        // Si ya existe en BD → OK, no hacer nada
         if (userRepository.existsByFirebaseUid(firebaseUid)) return false;
 
+        // Si llegó acá, Firebase validó el token (el filtro JWT ya lo hizo)
+        // pero no existe en BD → crearlo
         Tenant tenant = tenantRepository.save(
             new Tenant("Proveedor " + email)
         );
