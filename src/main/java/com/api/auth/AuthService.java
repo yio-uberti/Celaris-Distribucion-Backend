@@ -1,12 +1,19 @@
 package com.api.auth;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.api.entidad.ProductoCatalogo;
+import com.api.entidad.productos;
+import com.api.repositorio.ProductoCatalogoRepository;
+import com.api.repositorio.repoProducto;
 import com.api.tenant.Tenant;
 import com.api.tenant.TenantRepository;
+import com.api.user.Rubro;
+import com.api.user.RubroRepository;
 import com.api.user.User;
 import com.api.user.UserRepository;
 
@@ -16,9 +23,16 @@ import jakarta.servlet.http.HttpServletRequest;
 public class AuthService {
 	@Autowired
     private UserRepository userRepository;
-
     @Autowired
     private TenantRepository tenantRepository;
+    
+    @Autowired
+    private ProductoCatalogoRepository productoCatalogoRepository;
+    @Autowired
+    private repoProducto productoRepository;
+    @Autowired
+    private RubroRepository rubroRepository;
+
 
     public boolean registerIfNotExists(HttpServletRequest request) {
 
@@ -64,6 +78,33 @@ public class AuthService {
         userData.setRubro(formulario.getRubro());
         userData.setFrecuenciaDeudores(formulario.getFrecuenciaDeudores());
         
+        asignarProductosCatalogo(userData);
+        
         userRepository.save(userData);
+    }
+    
+    private void asignarProductosCatalogo(User user) {
+        // Buscar el rubro del usuario
+        Optional<Rubro> rubroOpt = rubroRepository.findByNombre(user.getRubro());
+        if (!rubroOpt.isPresent()) return;
+        
+        Rubro rubro = rubroOpt.get();
+        
+        // Obtener productos del catálogo de ese rubro
+        List<ProductoCatalogo> productosCatalogo = 
+            productoCatalogoRepository.findByRubro(rubro);
+        
+        // Crear productos para el tenant del usuario
+        for (ProductoCatalogo catalogo : productosCatalogo) {
+            productos producto = productos.builder()
+                .nombreProducto(catalogo.getNombre())
+                .precio_actual(null) // Sin precio inicialmente
+                .tenantId(user.getTenantId())
+                .catalogo(catalogo)
+                .personalizado(false)
+                .build();
+            
+            productoRepository.save(producto);
+        }
     }
 }

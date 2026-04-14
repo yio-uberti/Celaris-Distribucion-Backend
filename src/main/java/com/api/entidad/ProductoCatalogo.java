@@ -1,6 +1,8 @@
 package com.api.entidad;
 
-import java.math.BigDecimal;
+import java.math.BigInteger;
+
+import com.api.user.Rubro;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,28 +18,28 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "producto", schema = "", catalog = "")
+@Table(name = "producto_catalogo", schema = "", catalog = "")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class productos {
-	
+public class ProductoCatalogo {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "id_prod")
-	private Long idProd;
-	@Column(name = "nombre_producto")
-	private String nombreProducto;
 	@Column
-	private BigDecimal precio_actual;
-	@Column(name ="tenant_id")
-	private Long tenantId;
+	private BigInteger id;
+	
+	@Column
+	private String nombre;
 	
 	@ManyToOne
-	@JoinColumn(name = "catalogo_id")
-	private ProductoCatalogo catalogo;
+    @JoinColumn(name = "rubro_id", nullable = false)
+    private Rubro rubro;
 
-	@Column(columnDefinition = "BOOLEAN DEFAULT FALSE")
-	private Boolean personalizado = false;
+	@Column
+	private String unidad;
+
+	@Column
+	private String categoria;
 }
