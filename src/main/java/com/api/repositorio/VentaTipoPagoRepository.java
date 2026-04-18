@@ -1,18 +1,14 @@
 package com.api.repositorio;
 
-import java.util.List;
-
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
-import com.api.entidad.PagoDeuda;
+import com.api.entidad.VentaTipoPago;
 
-public interface repoPagoDeuda extends CrudRepository<PagoDeuda, Integer>{
-	List<PagoDeuda> findAllByClienteIdClienteAndTenantId(Integer idCliente, Long tenantId);
-	
+public interface VentaTipoPagoRepository extends CrudRepository<VentaTipoPago, Integer>{
 	@Modifying
-	@Query("DELETE FROM PagoDeuda pd WHERE pd.tenantId = :tenantId")
+	@Query("DELETE FROM VentaTipoPago vtp WHERE vtp.venta.tenantId = :tenantId")
 	void deleteAllByTenantId(@Param("tenantId") Long tenantId);
 }

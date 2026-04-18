@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.api.repositorio.DetalleVentaRepository;
+import com.api.repositorio.VentaTipoPagoRepository;
 import com.api.repositorio.repoClientes;
+import com.api.repositorio.repoPagoDeuda;
 import com.api.repositorio.repoProducto;
 import com.api.repositorio.repoVentas;
 import com.api.tenant.TenantRepository;
@@ -42,6 +45,13 @@ public class AuthController {
 	private TenantRepository tenantRepository;
 	@Autowired
 	private SuscripcionRepository suscripcionRepository;
+	@Autowired
+	private DetalleVentaRepository detalleVentaRepository;
+	@Autowired
+	private VentaTipoPagoRepository ventaTipoPagoRepository;
+	@Autowired
+	private repoPagoDeuda pagoDeudaRepository;
+	
 
 //	Metodo para traer datos del usuario
 	@GetMapping("/me")
@@ -93,20 +103,49 @@ public class AuthController {
 	@Transactional
 	@DeleteMapping("/borrar-usuario")
 	public ResponseEntity<?> borrar(HttpServletRequest request) {
-		String firebaseUid = (String) request.getAttribute("firebaseUid");
+	    try {
+	        String firebaseUid = (String) request.getAttribute("firebaseUid");
 
-		User user = userRepository.findByFirebaseUid(firebaseUid)
-				.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+	        User user = userRepository.findByFirebaseUid(firebaseUid)
+	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-		Long tenantId = user.getTenantId();
-		suscripcionRepository.deleteByUser(user);
-		ventaRepository.deleteAllByTenantId(tenantId);
-		clienteRepository.deleteAllByTenantId(tenantId);
-		productoRepository.deleteAllByTenantId(tenantId);
-		userRepository.delete(user);
-		tenantRepository.deleteById(tenantId);
+	        Long tenantId = user.getTenantId();
+	        Long userId = user.getId();
 
-		return null;
+	        // ORDEN CRÍTICO: borrar de hijos a padres
+	        
+	        // 1. Borrar detalles de venta (FK a venta)
+	        detalleVentaRepository.deleteAllByTenantId(tenantId);
+	        
+	        // 2. Borrar venta_tipo_pago (FK a venta)
+	        ventaTipoPagoRepository.deleteAllByTenantId(tenantId);
+	        
+	        // 3. Borrar ventas (FK a cliente)
+	        ventaRepository.deleteAllByTenantId(tenantId);
+	        
+	        // 4. Borrar pagos de deuda (FK a cliente)
+	        pagoDeudaRepository.deleteAllByTenantId(tenantId);
+	        
+	        // 5. Borrar clientes
+	        clienteRepository.deleteAllByTenantId(tenantId);
+	        
+	        // 6. Borrar productos
+	        productoRepository.deleteAllByTenantId(tenantId);
+	        
+	        // 7. Borrar suscripción (FK a user) ⚠️ ANTES del user
+	        suscripcionRepository.deleteByUserId(userId);
+	        
+	        // 8. Borrar usuario
+	        userRepository.delete(user);
+	        
+	        // 9. Borrar tenant
+	        tenantRepository.deleteById(tenantId);
+
+	        return ResponseEntity.ok("Usuario eliminado correctamente");
+	        
+	    } catch (Exception e) {
+	        return ResponseEntity.status(500).body("Error al eliminar: " + e.getMessage());
+	    }
 	}
 
 	@DeleteMapping("/auth/cleanup")
