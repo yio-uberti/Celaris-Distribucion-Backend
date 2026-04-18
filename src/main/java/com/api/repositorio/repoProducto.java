@@ -19,4 +19,6 @@ public interface repoProducto extends CrudRepository<productos, Long> {
 	void deleteByNombreProductoAndTenantId(String nombre, Long tenantId);
 	
 	void deleteAllByTenantId(Long tenantId);
+	
+	long countByTenantIdAndPrecioActualIsNull(Long tenantId);
 }

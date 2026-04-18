@@ -62,6 +62,12 @@ public class AuthController {
 		return ResponseEntity.ok(user);
 	}
 
+	@GetMapping("/productos-sin-precio")
+	public ResponseEntity<Boolean> tieneProductosSinPrecio(HttpServletRequest request) {
+	    boolean sinPrecio = authService.tieneProductosSinPrecio(request);
+	    return ResponseEntity.ok(sinPrecio);
+	}
+	
 //	Metodo de login o inicio sesion
 	@PostMapping("/login")
 	public ResponseEntity<Map<String, Object>> login(HttpServletRequest request) {

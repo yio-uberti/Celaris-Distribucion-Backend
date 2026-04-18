@@ -64,7 +64,6 @@ public class AuthService {
 
     public void completarFormulario(HttpServletRequest request, FormularioRequest formulario) {
         String firebaseUid = (String) request.getAttribute("firebaseUid");
-        
         if (firebaseUid == null) return;
         
         Optional<User> userOptional = userRepository.findByFirebaseUid(firebaseUid);
@@ -78,7 +77,9 @@ public class AuthService {
         userData.setRubro(formulario.getRubro());
         userData.setFrecuenciaDeudores(formulario.getFrecuenciaDeudores());
         
-        asignarProductosCatalogo(userData);
+        if (!"Personalizado".equals(formulario.getRubro())) {
+			asignarProductosCatalogo(userData);
+		}
         
         userRepository.save(userData);
     }
@@ -106,5 +107,21 @@ public class AuthService {
             
             productoRepository.save(producto);
         }
+    }
+    
+    public boolean tieneProductosSinPrecio(HttpServletRequest request) {
+        String firebaseUid = (String) request.getAttribute("firebaseUid");
+        if (firebaseUid == null) return true; // Sin auth = bloquear
+        
+        Optional<User> userOpt = userRepository.findByFirebaseUid(firebaseUid);
+        if (!userOpt.isPresent()) return true;
+        
+        User user = userOpt.get();
+        Long tenantId = user.getTenantId();
+        
+        // Contar productos sin precio del tenant
+        long productosSinPrecio = productoRepository.countByTenantIdAndPrecioActualIsNull(tenantId);
+        
+        return productosSinPrecio > 0; // true = hay productos sin precio
     }
 }
