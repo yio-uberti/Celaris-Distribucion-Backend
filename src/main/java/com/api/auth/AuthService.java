@@ -99,7 +99,7 @@ public class AuthService {
         for (ProductoCatalogo catalogo : productosCatalogo) {
             productos producto = productos.builder()
                 .nombreProducto(catalogo.getNombre())
-                .precio_actual(null) // Sin precio inicialmente
+                .precioActual(null) // Sin precio inicialmente
                 .tenantId(user.getTenantId())
                 .catalogo(catalogo)
                 .personalizado(false)

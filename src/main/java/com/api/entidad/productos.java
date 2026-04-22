@@ -29,8 +29,8 @@ public class productos {
 	private Long idProd;
 	@Column(name = "nombre_producto")
 	private String nombreProducto;
-	@Column
-	private BigDecimal precio_actual;
+	@Column(name = "precio_actual")
+	private BigDecimal precioActual;
 	@Column(name ="tenant_id")
 	private Long tenantId;
 	

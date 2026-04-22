@@ -103,10 +103,10 @@ public class VentaServicio {
 			productos producto = productoRepository.findByIdProdAndTenantId(d.getIdProducto(), tenantId)
 					.orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
-			BigDecimal subtotal = producto.getPrecio_actual().multiply(BigDecimal.valueOf(d.getCantidad()));
+			BigDecimal subtotal = producto.getPrecioActual().multiply(BigDecimal.valueOf(d.getCantidad()));
 
 			detalles.add(DetalleVenta.builder().venta(venta).producto(producto).cantidad(d.getCantidad())
-					.precio_unitario(producto.getPrecio_actual()).subtotal(subtotal).build());
+					.precio_unitario(producto.getPrecioActual()).subtotal(subtotal).build());
 
 			total = total.add(subtotal);
 		}
@@ -185,14 +185,14 @@ public class VentaServicio {
 	        productos producto = productoRepository.findByIdProdAndTenantId(d.getIdProducto(), tenantId)
 	            .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
-	        BigDecimal subtotal = producto.getPrecio_actual()
+	        BigDecimal subtotal = producto.getPrecioActual()
 	            .multiply(BigDecimal.valueOf(d.getCantidad()));
 
 	        nuevosDetalles.add(DetalleVenta.builder()
 	            .venta(venta)
 	            .producto(producto)
 	            .cantidad(d.getCantidad())
-	            .precio_unitario(producto.getPrecio_actual())
+	            .precio_unitario(producto.getPrecioActual())
 	            .subtotal(subtotal)
 	            .build());
 
