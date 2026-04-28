@@ -40,15 +40,6 @@ public class conProductos {
                                            @RequestBody productos producto) {
         return ResponseEntity.ok(productoService.update(request, nombre, producto));
     }
-    
-    @PutMapping("/actualizacion-masiva")
-    public ResponseEntity<ActualizacionResultado> updateMasiva(
-            HttpServletRequest request,
-            @RequestBody ActualizacionMasivaRequest req) {
-
-    	ActualizacionResultado res = productoService.actualizacionMasiva(request, req.getCambios());
-        return ResponseEntity.ok(res);
-    }
 
     @DeleteMapping("/{nombre}")
     public ResponseEntity<Void> delete(HttpServletRequest request, @PathVariable String nombre) {

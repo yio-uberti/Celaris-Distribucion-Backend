@@ -9,6 +9,8 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import jakarta.transaction.Transactional;
+
 @Repository
 public interface SuscripcionRepository extends CrudRepository<Suscripcion, Integer> {
 
@@ -25,4 +27,9 @@ public interface SuscripcionRepository extends CrudRepository<Suscripcion, Integ
 	@Modifying
 	@Query("DELETE FROM Suscripcion s WHERE s.user.id = :userId")
 	void deleteByUserId(@Param("userId") Long userId);
+	
+	@Modifying
+	@Transactional
+	@Query("UPDATE Suscripcion s SET s.estado = 'CANCELADA' WHERE s.user.id = :userId AND s.estado = 'ACTIVA'")
+	void cancelarActivas(@Param("userId") Long userId);
 }
