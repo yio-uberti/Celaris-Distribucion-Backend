@@ -24,7 +24,7 @@ public class ProductoServicio {
 	private Long getTenantId(HttpServletRequest request) {
 		String firebaseUid = (String) request.getAttribute("firebaseUid");
 		return userRepository.findByFirebaseUid(firebaseUid)
-				.orElseThrow(() -> new RuntimeException("Usuario no encontrado")).getTenantId();
+				.orElseThrow(() -> new RuntimeException("Usuario no encontrado")).getTenant().getId();
 	}
 
 	public List<productos> getAll(HttpServletRequest request) {

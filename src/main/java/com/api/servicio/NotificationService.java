@@ -57,7 +57,7 @@ public class NotificationService {
 		LocalDate hoy = LocalDate.now();
 
 		for (User user : usuarios) {
-			List<Ventas> reservas = ventaRepository.findAllByTenantIdAndEstadoAndFechaEntrega(user.getTenantId(),
+			List<Ventas> reservas = ventaRepository.findAllByTenantIdAndEstadoAndFechaEntrega(user.getTenant().getId(),
 					"RESERVADA", hoy);
 			if (!reservas.isEmpty()) {
 				enviarNotificacion(user.getPushToken(), "📦 Entregas para hoy",
@@ -84,7 +84,7 @@ public class NotificationService {
 	        if (!debeNotificar) continue;
 	        //Busca deudores para notificar al proveedor
 			List<clientes> deudores = (List<clientes>) clienteRepository
-					.findAllByTenantIdAndSaldoDeudorGreaterThan(user.getTenantId(), BigDecimal.ZERO);
+					.findAllByTenantIdAndSaldoDeudorGreaterThan(user.getTenant().getId(), BigDecimal.ZERO);
 			if (!deudores.isEmpty()) {
 				BigDecimal totalDeuda = deudores.stream().map(clientes::getSaldoDeudor).reduce(BigDecimal.ZERO,
 						BigDecimal::add);

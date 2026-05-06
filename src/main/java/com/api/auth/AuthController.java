@@ -51,7 +51,6 @@ public class AuthController {
 	private VentaTipoPagoRepository ventaTipoPagoRepository;
 	@Autowired
 	private repoPagoDeuda pagoDeudaRepository;
-	
 
 //	Metodo para traer datos del usuario
 	@GetMapping("/me")
@@ -59,15 +58,19 @@ public class AuthController {
 		String firebaseUid = (String) request.getAttribute("firebaseUid");
 		User user = userRepository.findByFirebaseUid(firebaseUid)
 				.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-		return ResponseEntity.ok(user);
+		return ResponseEntity.ok(Map.of("id", user.getId(), "nombre", user.getNombre(), "email", user.getEmail(), "rol",
+				user.getRol().getNombre(), // OWNER / EMPLEADO / etc
+				"tenantTipo", user.getTenant().getTipo(), // AUTONOMO / EMPRESA
+				"tenantId", user.getTenant().getId(), "permisos",
+				user.getRol().getPermisos().stream().map(p -> p.getClave()).toList()));
 	}
 
 	@GetMapping("/productos-sin-precio")
 	public ResponseEntity<Boolean> tieneProductosSinPrecio(HttpServletRequest request) {
-	    boolean sinPrecio = authService.tieneProductosSinPrecio(request);
-	    return ResponseEntity.ok(sinPrecio);
+		boolean sinPrecio = authService.tieneProductosSinPrecio(request);
+		return ResponseEntity.ok(sinPrecio);
 	}
-	
+
 //	Metodo de login o inicio sesion
 	@PostMapping("/login")
 	public ResponseEntity<Map<String, Object>> login(HttpServletRequest request) {
@@ -105,53 +108,62 @@ public class AuthController {
 		userRepository.save(user);
 		return ResponseEntity.ok().build();
 	}
+	
+//	Metodo para que las empresas creen empleados
+	@PostMapping("/activar-invitacion")
+	public ResponseEntity<?> activarInvitacion(
+	        @RequestBody ActivarInvitacionRequest body,
+	        HttpServletRequest request) {
+	    authService.activarInvitacion(request, body);
+	    return ResponseEntity.ok().build();
+	}
 
 	@Transactional
 	@DeleteMapping("/borrar-usuario")
 	public ResponseEntity<?> borrar(HttpServletRequest request) {
-	    try {
-	        String firebaseUid = (String) request.getAttribute("firebaseUid");
+		try {
+			String firebaseUid = (String) request.getAttribute("firebaseUid");
 
-	        User user = userRepository.findByFirebaseUid(firebaseUid)
-	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+			User user = userRepository.findByFirebaseUid(firebaseUid)
+					.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-	        Long tenantId = user.getTenantId();
-	        Long userId = user.getId();
+			Long tenantId = user.getTenant().getId();
+			Long userId = user.getId();
 
-	        // ORDEN CRÍTICO: borrar de hijos a padres
-	        
-	        // 1. Borrar detalles de venta (FK a venta)
-	        detalleVentaRepository.deleteAllByTenantId(tenantId);
-	        
-	        // 2. Borrar venta_tipo_pago (FK a venta)
-	        ventaTipoPagoRepository.deleteAllByTenantId(tenantId);
-	        
-	        // 3. Borrar ventas (FK a cliente)
-	        ventaRepository.deleteAllByTenantId(tenantId);
-	        
-	        // 4. Borrar pagos de deuda (FK a cliente)
-	        pagoDeudaRepository.deleteAllByTenantId(tenantId);
-	        
-	        // 5. Borrar clientes
-	        clienteRepository.deleteAllByTenantId(tenantId);
-	        
-	        // 6. Borrar productos
-	        productoRepository.deleteAllByTenantId(tenantId);
-	        
-	        // 7. Borrar suscripción (FK a user) ⚠️ ANTES del user
-	        suscripcionRepository.deleteByUserId(userId);
-	        
-	        // 8. Borrar usuario
-	        userRepository.delete(user);
-	        
-	        // 9. Borrar tenant
-	        tenantRepository.deleteById(tenantId);
+			// ORDEN CRÍTICO: borrar de hijos a padres
 
-	        return ResponseEntity.ok("Usuario eliminado correctamente");
-	        
-	    } catch (Exception e) {
-	        return ResponseEntity.status(500).body("Error al eliminar: " + e.getMessage());
-	    }
+			// 1. Borrar detalles de venta (FK a venta)
+			detalleVentaRepository.deleteAllByTenantId(tenantId);
+
+			// 2. Borrar venta_tipo_pago (FK a venta)
+			ventaTipoPagoRepository.deleteAllByTenantId(tenantId);
+
+			// 3. Borrar ventas (FK a cliente)
+			ventaRepository.deleteAllByTenantId(tenantId);
+
+			// 4. Borrar pagos de deuda (FK a cliente)
+			pagoDeudaRepository.deleteAllByTenantId(tenantId);
+
+			// 5. Borrar clientes
+			clienteRepository.deleteAllByTenantId(tenantId);
+
+			// 6. Borrar productos
+			productoRepository.deleteAllByTenantId(tenantId);
+
+			// 7. Borrar suscripción (FK a user) ⚠️ ANTES del user
+			suscripcionRepository.deleteByUserId(userId);
+
+			// 8. Borrar usuario
+			userRepository.delete(user);
+
+			// 9. Borrar tenant
+			tenantRepository.deleteById(tenantId);
+
+			return ResponseEntity.ok("Usuario eliminado correctamente");
+
+		} catch (Exception e) {
+			return ResponseEntity.status(500).body("Error al eliminar: " + e.getMessage());
+		}
 	}
 
 	@DeleteMapping("/auth/cleanup")
@@ -161,7 +173,7 @@ public class AuthController {
 		// Si existe → eliminarlo (caso donde se re-registró en Firebase)
 		String uid = (String) request.getAttribute("firebaseUid");
 		userRepository.findByFirebaseUid(uid).ifPresent(user -> {
-			tenantRepository.deleteById(user.getTenantId());
+			tenantRepository.deleteById(user.getTenant().getId());
 			userRepository.delete(user);
 		});
 		return ResponseEntity.ok().build();

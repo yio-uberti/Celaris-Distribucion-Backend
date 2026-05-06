@@ -23,7 +23,7 @@ public class ClienteServicio {
 	private Long getTenantId(HttpServletRequest request) {
 		String uid = (String) request.getAttribute("firebaseUid");
 		return userRepository.findByFirebaseUid(uid).orElseThrow(() -> new RuntimeException("Usuario no encontrado"))
-				.getTenantId();
+				.getTenant().getId();
 	}
 
 	// Metodo parar traer todos los clientes

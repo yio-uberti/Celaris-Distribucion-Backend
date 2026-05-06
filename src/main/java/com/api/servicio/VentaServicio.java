@@ -51,7 +51,7 @@ public class VentaServicio {
 	private Long getTenantId(HttpServletRequest request) {
 		String uid = (String) request.getAttribute("firebaseUid");
 		return userRepository.findByFirebaseUid(uid).orElseThrow(() -> new RuntimeException("Usuario no encontrado"))
-				.getTenantId();
+				.getTenant().getId();
 	}
 
 	// GET — traer todas las ventas del tenant

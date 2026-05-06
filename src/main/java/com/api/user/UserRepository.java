@@ -16,4 +16,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	List<User> findAllByPushTokenIsNotNull();
 
 	void deleteAllByTenantId(Long tenantId);
+
+	List<User> findByTenantIdAndIdNot(Long tenantId, Long id);
 }
