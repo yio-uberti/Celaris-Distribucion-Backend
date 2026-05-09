@@ -17,22 +17,17 @@ public class SuscripcionService {
 	private final PlanRepository planRepo;
 	private final UserRepository userRepo;
 
-	public boolean yaUsoTrial(User user) {
-		return suscripcionRepo.existsByUserAndUsoTrialTrue(user);
-	}
+	public Suscripcion asignarFree(User user) {
+	    Plan free = planRepo.findById(1)
+	            .orElseThrow(() -> new RuntimeException("Plan FREE no encontrado"));
 
-	public Suscripcion asignarTrial(User user) {
-		Plan premium = planRepo.findById(2).orElseThrow(() -> new RuntimeException("Plan PREMIUM no encontrado"));
-
-		Suscripcion trial = new Suscripcion();
-		trial.setUser(user);
-		trial.setPlan(premium);
-		trial.setEstado("ACTIVA");
-		trial.setUsoTrial(true);
-		trial.setInicio(LocalDateTime.now());
-		trial.setVencimiento(LocalDateTime.now().plusDays(30));
-
-		return suscripcionRepo.save(trial);
+	    Suscripcion suscripcion = new Suscripcion();
+	    suscripcion.setUser(user);
+	    suscripcion.setPlan(free);
+	    suscripcion.setEstado("ACTIVA");
+	    suscripcion.setInicio(LocalDateTime.now());
+	    // sin vencimiento, sin trial
+	    return suscripcionRepo.save(suscripcion);
 	}
 
 	public void vencerSuscripcionesExpiradas() {
@@ -48,7 +43,6 @@ public class SuscripcionService {
 				Plan free = planRepo.findById(1).orElseThrow();
 				User user = s.getUser();
 				user.setPlan(free);
-				user.setTrialExpira(null);
 				userRepo.save(user);
 			}
 		}

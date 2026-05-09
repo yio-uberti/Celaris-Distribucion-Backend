@@ -101,7 +101,6 @@ public class MercadoPagoController {
 
 	                // Actualizar user
 	                user.setPlan(plan);
-	                user.setTrialExpira(null);
 	                userRepository.save(user);
 
 	                // Cancelar suscripciones anteriores activas
@@ -112,7 +111,6 @@ public class MercadoPagoController {
 	                sus.setUser(user);
 	                sus.setPlan(plan);
 	                sus.setEstado("ACTIVA");
-	                sus.setUsoTrial(false);
 	                sus.setInicio(LocalDateTime.now());
 	                sus.setVencimiento(vencimiento);
 	                sus.setMetodoPago("MERCADOPAGO");

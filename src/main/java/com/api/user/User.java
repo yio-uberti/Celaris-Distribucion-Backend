@@ -70,9 +70,6 @@ public class User {
 	@JoinColumn(name = "rol_id")
 	private Rol rol;
 
-	@Column(name = "trial_expira")
-	private LocalDateTime trialExpira;
-
 	@Column(name = "activo")
 	private Boolean activo;
 

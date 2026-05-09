@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.api.repositorio.PlanRepository;
 import com.api.user.Plan;
-import com.api.user.Suscripcion;
 import com.api.user.SuscripcionService;
 import com.api.user.User;
 import com.api.user.UserRepository;
@@ -64,26 +63,19 @@ public class PlanController {
 		return ResponseEntity.ok(user.getPlan());
 	}
 
-	@PostMapping("/trial")
-	public ResponseEntity<?> asignarTrial(HttpServletRequest request) {
-		String uid = (String) request.getAttribute("firebaseUid");
-		User user = userRepository.findByFirebaseUid(uid)
-				.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+	@PostMapping("/iniciar")
+	public ResponseEntity<?> iniciarPlanFree(HttpServletRequest request) {
+	    String uid = (String) request.getAttribute("firebaseUid");
+	    User user = userRepository.findByFirebaseUid(uid)
+	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-		// La fuente de verdad ahora es la tabla suscripcion
-		if (suscripcionService.yaUsoTrial(user)) {
-			return ResponseEntity.badRequest().body("Ya usaste tu prueba gratuita");
-		}
+	    // Si ya tiene suscripción activa no hacer nada
+	    if (suscripcionService.getSuscripcionActiva(user).isPresent()) {
+	        return ResponseEntity.ok().build();
+	    }
 
-		// Guardar en suscripcion
-		Suscripcion trial = suscripcionService.asignarTrial(user);
-
-		// Mantener user sincronizado (campo de conveniencia)
-		user.setPlan(trial.getPlan());
-		user.setTrialExpira(trial.getVencimiento());
-		userRepository.save(user);
-
-		return ResponseEntity.ok().build();
+	    suscripcionService.asignarFree(user);
+	    return ResponseEntity.ok().build();
 	}
 
 	@PostMapping("/cancelar")
@@ -97,7 +89,6 @@ public class PlanController {
 		
 		Plan free = planRepository.findById(1).orElseThrow();
 		user.setPlan(free);
-		user.setTrialExpira(null);
 		userRepository.save(user);
 
 		return ResponseEntity.ok().build();

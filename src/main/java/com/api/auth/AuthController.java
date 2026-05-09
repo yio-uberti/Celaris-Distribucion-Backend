@@ -1,5 +1,6 @@
 package com.api.auth;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import com.api.repositorio.repoClientes;
 import com.api.repositorio.repoPagoDeuda;
 import com.api.repositorio.repoProducto;
 import com.api.repositorio.repoVentas;
+import com.api.tenant.Tenant;
 import com.api.tenant.TenantRepository;
 import com.api.user.SuscripcionRepository;
 import com.api.user.User;
@@ -54,15 +56,26 @@ public class AuthController {
 
 //	Metodo para traer datos del usuario
 	@GetMapping("/me")
-	public ResponseEntity<?> me(HttpServletRequest request) throws RuntimeException {
-		String firebaseUid = (String) request.getAttribute("firebaseUid");
-		User user = userRepository.findByFirebaseUid(firebaseUid)
-				.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-		return ResponseEntity.ok(Map.of("id", user.getId(), "nombre", user.getNombre(), "email", user.getEmail(), "rol",
-				user.getRol().getNombre(), // OWNER / EMPLEADO / etc
-				"tenantTipo", user.getTenant().getTipo(), // AUTONOMO / EMPRESA
-				"tenantId", user.getTenant().getId(), "permisos",
-				user.getRol().getPermisos().stream().map(p -> p.getClave()).toList()));
+	public ResponseEntity<?> me(HttpServletRequest request) {
+	    String firebaseUid = (String) request.getAttribute("firebaseUid");
+	    User user = userRepository.findByFirebaseUid(firebaseUid)
+	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+	    Tenant tenant = user.getTenant();
+
+	    Map<String, Object> response = new HashMap<>();
+	    response.put("id", user.getId());
+	    response.put("nombre", user.getNombre());
+	    response.put("apellido", user.getApellido());
+	    response.put("email", user.getEmail());
+	    response.put("rol", user.getRol().getNombre());
+	    response.put("tenantId", tenant.getId());
+	    response.put("tenantTipo", tenant.getTipo());           // AUTONOMO / EMPRESA
+	    response.put("tenantNombre", tenant.getNombre());       // nombre del negocio/empresa
+	    response.put("permisos", user.getRol().getPermisos()
+	            .stream().map(p -> p.getClave()).toList());
+
+	    return ResponseEntity.ok(response);
 	}
 
 	@GetMapping("/productos-sin-precio")

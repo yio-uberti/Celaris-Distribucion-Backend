@@ -18,8 +18,6 @@ public interface SuscripcionRepository extends CrudRepository<Suscripcion, Integ
 	
 	List<Suscripcion> findByEstado(String estado);
 
-	boolean existsByUserAndUsoTrialTrue(User user);
-
 	List<Suscripcion> findByUser(User user);
 	
 	void deleteByUser(User user);

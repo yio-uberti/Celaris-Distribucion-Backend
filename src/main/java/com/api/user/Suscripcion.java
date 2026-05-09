@@ -34,9 +34,6 @@ public class Suscripcion {
     @Column(nullable = false)
     private String estado = "ACTIVA"; // ACTIVA, VENCIDA, CANCELADA, PENDIENTE
 
-    @Column(name = "uso_trial", nullable = false)
-    private Boolean usoTrial = false;
-
     @Column(nullable = false)
     private LocalDateTime inicio = LocalDateTime.now();
 
