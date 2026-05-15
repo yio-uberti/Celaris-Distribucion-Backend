@@ -67,7 +67,9 @@ public class AuthController {
 	    response.put("id", user.getId());
 	    response.put("nombre", user.getNombre());
 	    response.put("apellido", user.getApellido());
+	    response.put("edad", user.getEdad());
 	    response.put("email", user.getEmail());
+	    response.put("rubro", user.getRubro());
 	    response.put("rol", user.getRol().getNombre());
 	    response.put("tenantId", tenant.getId());
 	    response.put("tenantTipo", tenant.getTipo());           // AUTONOMO / EMPRESA

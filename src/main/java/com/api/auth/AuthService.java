@@ -91,6 +91,7 @@ public class AuthService {
 		userData.setNombre(formulario.getNombre());
 		userData.setApellido(formulario.getApellido());
 		userData.setEdad(formulario.getEdad());
+		userData.setRubro(formulario.getRubro());
 		userData.setFrecuenciaDeudores(formulario.getFrecuenciaDeudores());
 
 		// Datos del tenant según tipo
@@ -98,6 +99,7 @@ public class AuthService {
 
 		if ("EMPRESA".equals(formulario.getTipo())) {
 			tenant.setTipo("EMPRESA");
+			tenant.setNombre(formulario.getNombre()); //Usamos el nombre del usuario para conectar el tennant
 			tenant.setNombreFantasia(formulario.getNombreFantasia());
 			tenant.setRazonSocial(formulario.getRazonSocial());
 			tenant.setCuit(formulario.getCuit());
