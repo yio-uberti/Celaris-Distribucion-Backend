@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import com.api.auth.InvitarEmpleadoRequest;
@@ -16,9 +18,6 @@ import com.api.user.Rol;
 import com.api.user.RolRepositorio;
 import com.api.user.User;
 import com.api.user.UserRepository;
-import com.google.firebase.auth.ActionCodeSettings;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseAuthException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -29,6 +28,8 @@ public class EmpleadoServicio {
     @Autowired private TenantRepository tenantRepository;
     @Autowired private RolRepositorio rolRepository;
     @Autowired private UserRepository userRepository;
+    @Autowired
+    private JavaMailSender mailSender;
     
     
     public List<EmpleadoRequest> listarEmpleados(HttpServletRequest request) {
@@ -87,21 +88,17 @@ public class EmpleadoServicio {
     }
 
     private void enviarEmailInvitacion(String email, String token, String nombreEmpresa) {
-        try {
-            // Link que abre tu app con el token
-            String link = "https://tuapp.com/activar?token=" + token;
+        String link = "celaris://activar?token=" + token; // ← deep link directo a la app
 
-            ActionCodeSettings actionCodeSettings = ActionCodeSettings.builder()
-                .setUrl(link)
-                .setHandleCodeInApp(true)
-                .setAndroidPackageName("com.celaris.distribuciones")
-                .setIosBundleId("com.celaris.distribuciones")
-                .build();
-
-            FirebaseAuth.getInstance().generateSignInWithEmailLink(email, actionCodeSettings);
-
-        } catch (FirebaseAuthException e) {
-            throw new RuntimeException("Error al enviar email: " + e.getMessage());
-        }
+        SimpleMailMessage mensaje = new SimpleMailMessage();
+        mensaje.setTo(email);
+        mensaje.setSubject("Te invitaron a unirte a " + nombreEmpresa + " en Celaris");
+        mensaje.setText(
+            "Hola! Fuiste invitado a unirte a " + nombreEmpresa + ".\n\n" +
+            "Tocá este link desde tu celular para activar tu cuenta:\n\n" +
+            link + "\n\n" +
+            "El link vence en 7 días."
+        );
+        mailSender.send(mensaje);
     }
 }

@@ -56,13 +56,14 @@ public class MercadoPagoController {
 	            .items(List.of(item))
 	            .externalReference(firebaseUid)
 //	            Aca va url de render mi servidor propio
-//	            .notificationUrl("https://TU-NGROK.ngrok.io/Api-Backend/mercado-pago/webhook")
+	            .notificationUrl("https://celaris-distribucion-backend.onrender.com/Api-Backend/mercado-pago/webhook")
 	            .build();
 
 	        PreferenceClient client = new PreferenceClient();
 	        Preference preference = client.create(preferenceRequest);
 //	    	Para produccion
 	    	return ResponseEntity.ok(preference.getInitPoint());
+//	    	Para desarrollo 
 //	        return ResponseEntity.ok(preference.getSandboxInitPoint());
 
 	    } catch (Exception e) {
