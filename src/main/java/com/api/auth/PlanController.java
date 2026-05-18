@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.api.repositorio.PlanRepository;
 import com.api.user.Plan;
+import com.api.user.SuscripcionRepository;
 import com.api.user.SuscripcionService;
 import com.api.user.User;
 import com.api.user.UserRepository;
@@ -29,6 +30,8 @@ public class PlanController {
 	private UserRepository userRepository;
 	@Autowired
 	private final SuscripcionService suscripcionService;
+	@Autowired
+	private SuscripcionRepository suscripcionRepository;
 
 	@GetMapping
 	public ResponseEntity<?> getPlanes() {
@@ -80,17 +83,21 @@ public class PlanController {
 
 	@PostMapping("/cancelar")
 	public ResponseEntity<?> cancelarPlan(HttpServletRequest request) {
-		String uid = (String) request.getAttribute("firebaseUid");
-		User user = userRepository.findByFirebaseUid(uid)
-				.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-		// Marcar suscripción activa como cancelada
-		suscripcionService.cancelarSuscripcionActiva(user);
-		
-		Plan free = planRepository.findById(1).orElseThrow();
-		user.setPlan(free);
-		userRepository.save(user);
-
-		return ResponseEntity.ok().build();
+	    String firebaseUid = (String) request.getAttribute("firebaseUid");
+	    
+	    User user = userRepository.findByFirebaseUid(firebaseUid)
+	        .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+	    
+	    // Volver al plan FREE
+	    Plan planFree = planRepository.findByNombre("FREE")
+	        .orElseThrow(() -> new RuntimeException("Plan FREE no encontrado"));
+	    
+	    user.setPlan(planFree);
+	    userRepository.save(user);
+	    
+	    // Cancelar suscripciones activas
+	    suscripcionRepository.cancelarActivas(user.getId());
+	    
+	    return ResponseEntity.ok().build();
 	}
 }

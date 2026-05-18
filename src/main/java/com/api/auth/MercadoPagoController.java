@@ -47,6 +47,7 @@ public class MercadoPagoController {
 	            .title(req.getPlan().equals("PREMIUM_ANUAL") 
 	                    ? "Plan Premium Anual - Celaris" 
 	                    : "Plan Premium Mensual - Celaris")
+	            .description(req.getPlan())
 	            .quantity(1)
 	            .currencyId("ARS")
 	            .unitPrice(req.getMonto())
