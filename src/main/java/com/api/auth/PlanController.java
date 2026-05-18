@@ -1,6 +1,7 @@
 package com.api.auth;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.api.repositorio.PlanRepository;
 import com.api.user.Plan;
+import com.api.user.Suscripcion;
 import com.api.user.SuscripcionRepository;
 import com.api.user.SuscripcionService;
 import com.api.user.User;
@@ -60,10 +62,29 @@ public class PlanController {
 			Plan free = planRepository.findById(1).orElseThrow();
 			user.setPlan(free);
 			userRepository.save(user);
-			return ResponseEntity.ok(free);
+			 return ResponseEntity.ok(
+			            new PlanResponse(
+			                free.getNombre(),
+			                "ACTIVA",
+			                null
+			            )
+			        );
 		}
 
-		return ResponseEntity.ok(user.getPlan());
+		 Optional<Suscripcion> suscripcion =
+		            suscripcionService.getSuscripcionActiva(user);
+
+		    String estado = suscripcion
+		            .map(Suscripcion::getEstado)
+		            .orElse("SIN_SUSCRIPCION");
+
+		    return ResponseEntity.ok(
+		        new PlanResponse(
+		            user.getPlan().getNombre(),
+		            estado,
+		            null
+		        )
+		    );
 	}
 
 	@PostMapping("/iniciar")
