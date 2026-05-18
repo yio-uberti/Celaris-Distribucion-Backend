@@ -75,6 +75,7 @@ public class MercadoPagoController {
 	// ── 2. NUEVO — MP llama esto automáticamente cuando alguien paga ──
 	@PostMapping("/webhook")
 	public ResponseEntity<?> webhook(@RequestBody Map<String, Object> body) {
+		System.out.println("🔔 WEBHOOK RECIBIDO: " + body); // ← agregá esto
 	    try {
 	        String type = (String) body.get("type");
 	        if ("payment".equals(type)) {
