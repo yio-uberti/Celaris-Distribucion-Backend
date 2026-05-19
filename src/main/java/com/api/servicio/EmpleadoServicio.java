@@ -88,7 +88,7 @@ public class EmpleadoServicio {
     }
 
     private void enviarEmailInvitacion(String email, String token, String nombreEmpresa) {
-        String link = "celaris://activar?token=" + token; // ← deep link directo a la app
+        String link = "celaris-distribuciones://activar?token=" + token; // ← deep link directo a la app
 
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setTo(email);
