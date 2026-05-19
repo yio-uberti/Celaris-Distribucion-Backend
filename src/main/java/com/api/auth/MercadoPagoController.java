@@ -77,10 +77,22 @@ public class MercadoPagoController {
 	public ResponseEntity<?> webhook(@RequestBody Map<String, Object> body) {
 		System.out.println("🔔 WEBHOOK RECIBIDO: " + body); // ← agregá esto
 	    try {
+	    	
+	    	// Formato nuevo (IPN)
 	        String type = (String) body.get("type");
+	        // Formato viejo (merchant_order)
+	        String topic = (String) body.get("topic");
+
+	        String paymentId = null;
+	        
 	        if ("payment".equals(type)) {
 	            Map<?, ?> data = (Map<?, ?>) body.get("data");
-	            String paymentId = (String) data.get("id");
+	            paymentId = (String) data.get("id");
+	        } else if("merchant_order".equals(topic)){
+	        	return ResponseEntity.ok().build();
+	        }
+	        
+	        if (paymentId == null) return ResponseEntity.ok().build();
 
 	            PaymentClient paymentClient = new PaymentClient();
 	            Payment payment = paymentClient.get(Long.parseLong(paymentId));
@@ -120,7 +132,6 @@ public class MercadoPagoController {
 	                sus.setTokenPago(String.valueOf(payment.getId()));
 	                suscripcionRepository.save(sus);
 	            }
-	        }
 	    } catch (Exception e) {
 	        System.out.println("Error en webhook: " + e.getMessage());
 	    }
