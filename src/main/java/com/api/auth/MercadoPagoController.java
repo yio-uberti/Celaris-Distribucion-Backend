@@ -49,20 +49,18 @@ public class MercadoPagoController {
 					.quantity(1)
 					.currencyId("ARS")
 					.unitPrice(req.getMonto()).build();
+			
 
-			PreferenceRequest preferenceRequest = PreferenceRequest.builder().items(List.of(item))
-					.externalReference(firebaseUid)
-//	            Aca va url de render mi servidor propio
+			PreferenceRequest preferenceRequest = PreferenceRequest.builder()
+					.items(List.of(item))
+					.externalReference(firebaseUid + "|" + req.getPlan())
 					.notificationUrl(
 							"https://celaris-distribucion-backend.onrender.com/Api-Backend/mercado-pago/webhook")
 					.build();
 
 			PreferenceClient client = new PreferenceClient();
 			Preference preference = client.create(preferenceRequest);
-//	    	Para produccion
 			return ResponseEntity.ok(preference.getInitPoint());
-//	    	Para desarrollo 
-//	        return ResponseEntity.ok(preference.getSandboxInitPoint());
 
 		} catch (Exception e) {
 			return ResponseEntity.status(500).body("Error: " + e.getMessage());
@@ -105,38 +103,35 @@ public class MercadoPagoController {
 			
 			
 			if ("approved".equals(payment.getStatus())) {
-				String firebaseUid = payment.getExternalReference();
-				// El plan viene en la descripción del item que mandaste
-				String planNombre = payment.getDescription(); // "PREMIUM_MENSUAL" o "PREMIUM_ANUAL"
+			    String externalRef = payment.getExternalReference();
+			    String[] parts = externalRef.split("\\|");
+			    String firebaseUid = parts[0];
+			    String planNombre = parts[1];
 
-				User user = userRepository.findByFirebaseUid(firebaseUid)
-						.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+			    User user = userRepository.findByFirebaseUid(firebaseUid)
+			            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-				// Buscar plan por nombre
-				Plan plan = planRepository.findByNombre(planNombre)
-						.orElseThrow(() -> new RuntimeException("Plan no encontrado"));
+			    Plan plan = planRepository.findByNombre(planNombre)
+			            .orElseThrow(() -> new RuntimeException("Plan no encontrado"));
 
-				// Calcular vencimiento
-				LocalDateTime vencimiento = planNombre.equals("PREMIUM_ANUAL") ? LocalDateTime.now().plusYears(1)
-						: LocalDateTime.now().plusMonths(1);
+			    LocalDateTime vencimiento = planNombre.equals("PREMIUM_ANUAL") 
+			            ? LocalDateTime.now().plusYears(1)
+			            : LocalDateTime.now().plusMonths(1);
 
-				// Actualizar user
-				user.setPlan(plan);
-				userRepository.save(user);
+			    user.setPlan(plan);
+			    userRepository.save(user);
 
-				// Cancelar suscripciones anteriores activas
-				suscripcionRepository.cancelarActivas(user.getId());
+			    suscripcionRepository.cancelarActivas(user.getId());
 
-				// Crear nueva suscripcion
-				Suscripcion sus = new Suscripcion();
-				sus.setUser(user);
-				sus.setPlan(plan);
-				sus.setEstado("ACTIVA");
-				sus.setInicio(LocalDateTime.now());
-				sus.setVencimiento(vencimiento);
-				sus.setMetodoPago("MERCADOPAGO");
-				sus.setTokenPago(String.valueOf(payment.getId()));
-				suscripcionRepository.save(sus);
+			    Suscripcion sus = new Suscripcion();
+			    sus.setUser(user);
+			    sus.setPlan(plan);
+			    sus.setEstado("ACTIVA");
+			    sus.setInicio(LocalDateTime.now());
+			    sus.setVencimiento(vencimiento);
+			    sus.setMetodoPago("MERCADOPAGO");
+			    sus.setTokenPago(String.valueOf(payment.getId()));
+			    suscripcionRepository.save(sus);
 			}
 		} catch (Exception e) {
 			System.out.println("Error en webhook: " + e.getMessage());
