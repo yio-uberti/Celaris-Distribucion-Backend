@@ -39,102 +39,99 @@ public class MercadoPagoController {
 
 	@PostMapping("/crear-pago")
 	public ResponseEntity<?> crearPago(@RequestBody PagoMp req, HttpServletRequest httpRequest) {
-	    String firebaseUid = (String) httpRequest.getAttribute("firebaseUid");
+		String firebaseUid = (String) httpRequest.getAttribute("firebaseUid");
 
-	    try {
-	        PreferenceItemRequest item = PreferenceItemRequest.builder()
-	            .id(req.getPlan())
-	            .title(req.getPlan().equals("PREMIUM_ANUAL") 
-	                    ? "Plan Premium Anual - Celaris" 
-	                    : "Plan Premium Mensual - Celaris")
-	            .description(req.getPlan())
-	            .quantity(1)
-	            .currencyId("ARS")
-	            .unitPrice(req.getMonto())
-	            .build();
+		try {
+			PreferenceItemRequest item = PreferenceItemRequest.builder().id(req.getPlan())
+					.title(req.getPlan().equals("PREMIUM_ANUAL") ? "Plan Premium Anual - Celaris"
+							: "Plan Premium Mensual - Celaris")
+					.description(req.getPlan())
+					.quantity(1)
+					.currencyId("ARS")
+					.unitPrice(req.getMonto()).build();
 
-	        PreferenceRequest preferenceRequest = PreferenceRequest.builder()
-	            .items(List.of(item))
-	            .externalReference(firebaseUid)
+			PreferenceRequest preferenceRequest = PreferenceRequest.builder().items(List.of(item))
+					.externalReference(firebaseUid)
 //	            Aca va url de render mi servidor propio
-	            .notificationUrl("https://celaris-distribucion-backend.onrender.com/Api-Backend/mercado-pago/webhook")
-	            .build();
+					.notificationUrl(
+							"https://celaris-distribucion-backend.onrender.com/Api-Backend/mercado-pago/webhook")
+					.build();
 
-	        PreferenceClient client = new PreferenceClient();
-	        Preference preference = client.create(preferenceRequest);
+			PreferenceClient client = new PreferenceClient();
+			Preference preference = client.create(preferenceRequest);
 //	    	Para produccion
-	    	return ResponseEntity.ok(preference.getInitPoint());
+			return ResponseEntity.ok(preference.getInitPoint());
 //	    	Para desarrollo 
 //	        return ResponseEntity.ok(preference.getSandboxInitPoint());
 
-	    } catch (Exception e) {
-	        return ResponseEntity.status(500).body("Error: " + e.getMessage());
-	    }
+		} catch (Exception e) {
+			return ResponseEntity.status(500).body("Error: " + e.getMessage());
+		}
 	}
-	
+
 	// ── 2. NUEVO — MP llama esto automáticamente cuando alguien paga ──
 	@PostMapping("/webhook")
 	public ResponseEntity<?> webhook(@RequestBody Map<String, Object> body) {
 		System.out.println("🔔 WEBHOOK RECIBIDO: " + body); // ← agregá esto
-	    try {
-	    	
-	    	// Formato nuevo (IPN)
-	        String type = (String) body.get("type");
-	        // Formato viejo (merchant_order)
-	        String topic = (String) body.get("topic");
+		try {
 
-	        String paymentId = null;
-	        
-	        if ("payment".equals(type)) {
-	            Map<?, ?> data = (Map<?, ?>) body.get("data");
-	            paymentId = (String) data.get("id");
-	        } else if("merchant_order".equals(topic)){
-	        	return ResponseEntity.ok().build();
-	        }
-	        
-	        if (paymentId == null) return ResponseEntity.ok().build();
+			// Formato nuevo (IPN)
+			String type = (String) body.get("type");
+			// Formato viejo (merchant_order)
+			String topic = (String) body.get("topic");
 
-	            PaymentClient paymentClient = new PaymentClient();
-	            Payment payment = paymentClient.get(Long.parseLong(paymentId));
+			String paymentId = null;
 
-	            if ("approved".equals(payment.getStatus())) {
-	                String firebaseUid = payment.getExternalReference();
-	                // El plan viene en la descripción del item que mandaste
-	                String planNombre = payment.getDescription(); // "PREMIUM_MENSUAL" o "PREMIUM_ANUAL"
+			if ("payment".equals(type)) {
+				Map<?, ?> data = (Map<?, ?>) body.get("data");
+				paymentId = (String) data.get("id");
+			} else if ("merchant_order".equals(topic)) {
+				return ResponseEntity.ok().build();
+			}
 
-	                User user = userRepository.findByFirebaseUid(firebaseUid)
-	                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+			if (paymentId == null)
+				return ResponseEntity.ok().build();
 
-	                // Buscar plan por nombre
-	                Plan plan = planRepository.findByNombre(planNombre)
-	                    .orElseThrow(() -> new RuntimeException("Plan no encontrado"));
+			PaymentClient paymentClient = new PaymentClient();
+			Payment payment = paymentClient.get(Long.parseLong(paymentId));
 
-	                // Calcular vencimiento
-	                LocalDateTime vencimiento = planNombre.equals("PREMIUM_ANUAL")
-	                    ? LocalDateTime.now().plusYears(1)
-	                    : LocalDateTime.now().plusMonths(1);
+			if ("approved".equals(payment.getStatus())) {
+				String firebaseUid = payment.getExternalReference();
+				// El plan viene en la descripción del item que mandaste
+				String planNombre = payment.getDescription(); // "PREMIUM_MENSUAL" o "PREMIUM_ANUAL"
 
-	                // Actualizar user
-	                user.setPlan(plan);
-	                userRepository.save(user);
+				User user = userRepository.findByFirebaseUid(firebaseUid)
+						.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-	                // Cancelar suscripciones anteriores activas
-	                suscripcionRepository.cancelarActivas(user.getId());
+				// Buscar plan por nombre
+				Plan plan = planRepository.findByNombre(planNombre)
+						.orElseThrow(() -> new RuntimeException("Plan no encontrado"));
 
-	                // Crear nueva suscripcion
-	                Suscripcion sus = new Suscripcion();
-	                sus.setUser(user);
-	                sus.setPlan(plan);
-	                sus.setEstado("ACTIVA");
-	                sus.setInicio(LocalDateTime.now());
-	                sus.setVencimiento(vencimiento);
-	                sus.setMetodoPago("MERCADOPAGO");
-	                sus.setTokenPago(String.valueOf(payment.getId()));
-	                suscripcionRepository.save(sus);
-	            }
-	    } catch (Exception e) {
-	        System.out.println("Error en webhook: " + e.getMessage());
-	    }
-	    return ResponseEntity.ok().build();
+				// Calcular vencimiento
+				LocalDateTime vencimiento = planNombre.equals("PREMIUM_ANUAL") ? LocalDateTime.now().plusYears(1)
+						: LocalDateTime.now().plusMonths(1);
+
+				// Actualizar user
+				user.setPlan(plan);
+				userRepository.save(user);
+
+				// Cancelar suscripciones anteriores activas
+				suscripcionRepository.cancelarActivas(user.getId());
+
+				// Crear nueva suscripcion
+				Suscripcion sus = new Suscripcion();
+				sus.setUser(user);
+				sus.setPlan(plan);
+				sus.setEstado("ACTIVA");
+				sus.setInicio(LocalDateTime.now());
+				sus.setVencimiento(vencimiento);
+				sus.setMetodoPago("MERCADOPAGO");
+				sus.setTokenPago(String.valueOf(payment.getId()));
+				suscripcionRepository.save(sus);
+			}
+		} catch (Exception e) {
+			System.out.println("Error en webhook: " + e.getMessage());
+		}
+		return ResponseEntity.ok().build();
 	}
 }
