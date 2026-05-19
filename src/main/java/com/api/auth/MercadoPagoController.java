@@ -95,6 +95,15 @@ public class MercadoPagoController {
 			PaymentClient paymentClient = new PaymentClient();
 			Payment payment = paymentClient.get(Long.parseLong(paymentId));
 
+			System.out.println("PAYMENT COMPLETO:");
+			System.out.println("ID: " + payment.getId());
+			System.out.println("STATUS: " + payment.getStatus());
+			System.out.println("DESCRIPTION: " + payment.getDescription());
+			System.out.println("EXTERNAL REF: " + payment.getExternalReference());
+			System.out.println("ORDER ID: " + payment.getOrder());
+			System.out.println("METADATA: " + payment.getMetadata());
+			
+			
 			if ("approved".equals(payment.getStatus())) {
 				String firebaseUid = payment.getExternalReference();
 				// El plan viene en la descripción del item que mandaste
