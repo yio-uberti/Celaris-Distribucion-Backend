@@ -149,6 +149,7 @@ public class VentaServicio {
 			}
 		}
 
+		userRepository.findByFirebaseUid(uid).ifPresent(venta::setRegistradoPor);
 		return ventaRepository.save(venta);
 	}
 
