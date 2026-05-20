@@ -33,6 +33,8 @@ public class productos {
 	private BigDecimal precioActual;
 	@Column(name ="tenant_id")
 	private Long tenantId;
+	@Column(name = "tipo_precio")
+	private String tipoPrecio;
 	
 	@ManyToOne
 	@JoinColumn(name = "catalogo_id")
