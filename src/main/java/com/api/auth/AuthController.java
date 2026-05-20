@@ -181,7 +181,7 @@ public class AuthController {
 		}
 	}
 
-	@DeleteMapping("/auth/cleanup")
+	@DeleteMapping("/cleanup")
 	public ResponseEntity<?> cleanup(HttpServletRequest request) {
 		// Solo llega acá si el token Firebase es válido
 		// Si el UID no existe en BD → no hay nada que limpiar
@@ -192,5 +192,10 @@ public class AuthController {
 			userRepository.delete(user);
 		});
 		return ResponseEntity.ok().build();
+	}
+	
+	@GetMapping("/puede-agregar-empleado")
+	public ResponseEntity<Boolean> puedeAgregarEmpleado(HttpServletRequest request) {
+	    return ResponseEntity.ok(authService.puedeAgregarEmpleado(request));
 	}
 }
