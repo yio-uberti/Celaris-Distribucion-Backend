@@ -26,6 +26,7 @@ public class VentaRequest {
 	    public static class DetalleRequest {
 	        private Long idProducto;
 	        private Integer cantidad;
+	        private BigDecimal precioUnitario;
 	    }
 
 	    @Data

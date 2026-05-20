@@ -41,6 +41,17 @@ public class AuthService {
 	@Autowired
 	private InvitacionRepository invitacionRepository;
 
+	// Exponé getTenantId como público
+	public Long getTenantIdPublic(HttpServletRequest request) {
+		return getTenantId(request);
+	}
+
+	private Long getTenantId(HttpServletRequest request) {
+		String uid = (String) request.getAttribute("firebaseUid");
+		return userRepository.findByFirebaseUid(uid).orElseThrow(() -> new RuntimeException("Usuario no encontrado"))
+				.getTenant().getId();
+	}
+
 	public boolean registerIfNotExists(HttpServletRequest request) {
 
 		String firebaseUid = (String) request.getAttribute("firebaseUid");
@@ -99,7 +110,7 @@ public class AuthService {
 
 		if ("EMPRESA".equals(formulario.getTipo())) {
 			tenant.setTipo("EMPRESA");
-			tenant.setNombre(formulario.getNombre()); //Usamos el nombre del usuario para conectar el tennant
+			tenant.setNombre(formulario.getNombre()); // Usamos el nombre del usuario para conectar el tennant
 			tenant.setNombreFantasia(formulario.getNombreFantasia());
 			tenant.setRazonSocial(formulario.getRazonSocial());
 			tenant.setCuit(formulario.getCuit());
@@ -191,5 +202,11 @@ public class AuthService {
 		// Marcar invitación como aceptada
 		invitacion.setEstado("ACEPTADA");
 		invitacionRepository.save(invitacion);
+	}
+	
+	public boolean puedeAgregarEmpleado(HttpServletRequest request) {
+	    Long tenantId = getTenantId(request);
+	    long cantidadEmpleados = userRepository.countByTenantIdAndRol_NombreNot(tenantId, "OWNER");
+	    return cantidadEmpleados < 3;
 	}
 }

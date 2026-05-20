@@ -18,4 +18,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	void deleteAllByTenantId(Long tenantId);
 
 	List<User> findByTenantIdAndIdNot(Long tenantId, Long id);
+	
+	long countByTenantIdAndRol_NombreNot(Long tenantId, String nombre);
 }
