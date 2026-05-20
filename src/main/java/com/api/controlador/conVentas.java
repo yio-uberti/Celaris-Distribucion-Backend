@@ -50,9 +50,11 @@ public class conVentas {
 
 	// Metodo para solicitar el historial del dia
 	@GetMapping("/historial")
-	public ResponseEntity<List<Ventas>> getHistorial(HttpServletRequest request, @RequestParam LocalDate fecha,
-			@RequestParam(required = false, defaultValue = "todos") String tipoPago) {
-		return ResponseEntity.ok(ventaService.getHistorial(request, fecha, tipoPago));
+	public ResponseEntity<?> getHistorial(HttpServletRequest request,
+	        @RequestParam LocalDate fecha,
+	        @RequestParam(required = false) String tipoPago) {
+	    List<Ventas> ventas = ventaService.getHistorial(request, fecha, tipoPago);
+	    return ResponseEntity.ok(ventas); // el cliente ya viene dentro de cada venta con su saldoDeudor
 	}
 
 //	Metodo para registrar una venta 

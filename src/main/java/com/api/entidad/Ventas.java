@@ -5,11 +5,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.api.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -57,5 +60,10 @@ public class Ventas {
 	@OneToMany(mappedBy = "venta", cascade = CascadeType.ALL)
 	@JsonManagedReference("venta-pagos")
 	private List<VentaTipoPago> pagos;
+	
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "registrado_por")
+	@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "tenant", "plan", "suscripciones"})
+	private User registradoPor;
 	
 }

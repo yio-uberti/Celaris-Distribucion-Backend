@@ -21,6 +21,7 @@ import com.api.repositorio.repoClientes;
 import com.api.repositorio.repoProducto;
 import com.api.repositorio.repoTipoPago;
 import com.api.repositorio.repoVentas;
+import com.api.user.User;
 import com.api.user.UserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -96,6 +97,12 @@ public class VentaServicio {
 		venta.setEstado(esReservada ? "RESERVADA" : "REGISTRADA");
 		venta.setTenantId(tenantId);
 
+		// Después de crear la venta base
+		String uid = (String) request.getAttribute("firebaseUid");
+		User registrador = userRepository.findByFirebaseUid(uid)
+		        .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+		venta.setRegistradoPor(registrador);
+		
 		// Armar detalles y calcular total
 		List<DetalleVenta> detalles = new ArrayList<>();
 		BigDecimal total = BigDecimal.ZERO;
