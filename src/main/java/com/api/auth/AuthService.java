@@ -121,10 +121,14 @@ public class AuthService {
 			tenant.setNombreFantasia(formulario.getNombre());
 			userData.setRubro(formulario.getRubro());
 
-			// Solo autónomos reciben lista genérica de productos
-			if (!"Personalizado".equals(formulario.getRubro())) {
-				asignarProductosCatalogo(userData);
-			}
+			// Guardar el rubro si no existe
+	        if (rubroRepository.findByNombre(formulario.getRubro()).isEmpty()) {
+	            Rubro r = new Rubro();
+	            r.setNombre(formulario.getRubro());
+	            rubroRepository.save(r);
+	        }
+	        asignarProductosCatalogo(userData);
+
 		}
 
 		tenantRepository.save(tenant);
@@ -203,10 +207,10 @@ public class AuthService {
 		invitacion.setEstado("ACEPTADA");
 		invitacionRepository.save(invitacion);
 	}
-	
+
 	public boolean puedeAgregarEmpleado(HttpServletRequest request) {
-	    Long tenantId = getTenantId(request);
-	    long cantidadEmpleados = userRepository.countByTenantIdAndRol_NombreNot(tenantId, "OWNER");
-	    return cantidadEmpleados < 3;
+		Long tenantId = getTenantId(request);
+		long cantidadEmpleados = userRepository.countByTenantIdAndRol_NombreNot(tenantId, "OWNER");
+		return cantidadEmpleados < 3;
 	}
 }
