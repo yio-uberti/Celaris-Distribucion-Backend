@@ -22,6 +22,7 @@ import com.api.repositorio.repoProducto;
 import com.api.repositorio.repoVentas;
 import com.api.tenant.Tenant;
 import com.api.tenant.TenantRepository;
+import com.api.user.InvitacionRepository;
 import com.api.user.SuscripcionRepository;
 import com.api.user.User;
 import com.api.user.UserRepository;
@@ -53,6 +54,8 @@ public class AuthController {
 	private VentaTipoPagoRepository ventaTipoPagoRepository;
 	@Autowired
 	private repoPagoDeuda pagoDeudaRepository;
+	@Autowired
+	private InvitacionRepository invitacionRepository;
 
 //	Metodo para traer datos del usuario
 	@GetMapping("/me")
@@ -168,6 +171,9 @@ public class AuthController {
 			// 7. Borrar suscripción (FK a user) ⚠️ ANTES del user
 			suscripcionRepository.deleteByUserId(userId);
 
+			// 7.5 Borrar invitaciones			
+			invitacionRepository.deleteAllByTenantId(tenantId);
+			
 			// 8. Borrar usuario
 			userRepository.delete(user);
 
