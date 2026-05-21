@@ -20,7 +20,7 @@ public interface repoProducto extends CrudRepository<productos, Long> {
 	void deleteByNombreProductoAndTenantId(String nombre, Long tenantId);
 	
 	@Modifying
-	@Query("DELETE FROM producto pd WHERE pd.tenantId = :tenantId")
+	@Query("DELETE FROM productos pd WHERE pd.tenantId = :tenantId")
 	void deleteAllByTenantId(Long tenantId);
 	
 	long countByTenantIdAndPrecioActualIsNull(Long tenantId);
