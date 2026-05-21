@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 import com.api.entidad.clientes;
 
@@ -21,5 +23,7 @@ public interface repoClientes extends JpaRepository<clientes, Integer> {
 	List<clientes> findAllByTenantIdAndSaldoDeudorGreaterThan(Long tenantId, BigDecimal saldo);
 	
 	//Borrar registro relacionado al usuario
+	@Modifying
+	@Query("DELETE FROM cliente dv WHERE dv.tenantId = :tenantId")
 	void deleteAllByTenantId(Long tenantId);
 }

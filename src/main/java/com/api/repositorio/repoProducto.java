@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.api.entidad.productos;
@@ -18,6 +19,8 @@ public interface repoProducto extends CrudRepository<productos, Long> {
 	@Modifying
 	void deleteByNombreProductoAndTenantId(String nombre, Long tenantId);
 	
+	@Modifying
+	@Query("DELETE FROM producto pd WHERE pd.tenantId = :tenantId")
 	void deleteAllByTenantId(Long tenantId);
 	
 	long countByTenantIdAndPrecioActualIsNull(Long tenantId);

@@ -177,7 +177,9 @@ public class AuthController {
 			return ResponseEntity.ok("Usuario eliminado correctamente");
 
 		} catch (Exception e) {
-			return ResponseEntity.status(500).body("Error al eliminar: " + e.getMessage());
+		    e.printStackTrace();
+		    return ResponseEntity.status(500)
+		        .body("Error al eliminar: " + e.getMessage());
 		}
 	}
 

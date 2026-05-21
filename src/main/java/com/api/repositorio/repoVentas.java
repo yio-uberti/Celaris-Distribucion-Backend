@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
@@ -65,5 +66,7 @@ public interface repoVentas extends CrudRepository<Ventas, Integer>{
 	                                     @Param("tipoPago") String tipoPago);
 	
 //	Metodo de repositorio para borrar registros del usuario
+	@Modifying
+	@Query("DELETE FROM venta vtp WHERE vtp.tenantId = :tenantId")
 	void deleteAllByTenantId(Long tenantId);
 }
