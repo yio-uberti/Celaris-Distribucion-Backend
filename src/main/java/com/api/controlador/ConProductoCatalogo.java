@@ -19,14 +19,21 @@ public class ConProductoCatalogo {
 	
 	@PostMapping
 	public ResponseEntity<?> cargarProducto(@RequestBody ProductoCatalogo pc) {
-	    // Verificar que no exista ya ese nombre
-		if (pcRepository.findByNombre(pc.getNombre()).isPresent()) {
+	    // Verificar qué está llegando
+	    System.out.println("Nombre: " + pc.getNombre());
+	    System.out.println("Rubro: " + pc.getRubro());
+
+	    if (pc.getNombre() == null || pc.getNombre().isEmpty()) {
+	        return ResponseEntity.badRequest().body("Nombre vacío");
+	    }
+
+	    if (pcRepository.findByNombre(pc.getNombre()).isPresent()) {
 	        return ResponseEntity.badRequest().body("El producto ya existe en el catálogo");
 	    }
 
 	    ProductoCatalogo pcNuevo = new ProductoCatalogo();
 	    pcNuevo.setNombre(pc.getNombre());
-	    pcNuevo.setRubro(pc.getRubro()); // Rubro completo, no el ID
+	    pcNuevo.setRubro(pc.getRubro());
 	    pcNuevo.setUnidad(pc.getUnidad());
 	    pcNuevo.setCategoria(pc.getCategoria());
 

@@ -10,6 +10,8 @@ import com.api.entidad.ProductoCatalogo;
 import com.api.entidad.productos;
 import com.api.repositorio.ProductoCatalogoRepository;
 import com.api.repositorio.repoProducto;
+import com.api.user.Rubro;
+import com.api.user.RubroRepository;
 import com.api.user.User;
 import com.api.user.UserRepository;
 
@@ -25,6 +27,8 @@ public class ProductoServicio {
 	private UserRepository userRepository;
 	@Autowired 
 	private ProductoCatalogoRepository productoCatalogoRepository;
+	@Autowired
+	private RubroRepository rubroRepository;
 
 	// Helper para obtener tenantId del request
 	private Long getTenantId(HttpServletRequest request) {
@@ -44,13 +48,29 @@ public class ProductoServicio {
 
 	    producto.setTenantId(user.getTenant().getId());
 
-	    Optional<ProductoCatalogo> catalogoOpt = productoCatalogoRepository
-	        .findByNombreAndRubroNombre(producto.getNombreProducto(), user.getRubro());
+	    // Buscar el rubro del usuario
+	    Optional<Rubro> rubroOpt = rubroRepository.findByNombre(user.getRubro());
 
-	    if (catalogoOpt.isPresent()) {
-	        producto.setCatalogo(catalogoOpt.get());
-	        producto.setPersonalizado(false);
+	    if (rubroOpt.isPresent()) {
+	        // Vincularlo al catálogo si ya existe
+	        Optional<ProductoCatalogo> catalogoOpt = productoCatalogoRepository
+	            .findByNombreAndRubroNombre(producto.getNombreProducto(), user.getRubro());
+
+	        if (catalogoOpt.isPresent()) {
+	            // Ya está en el catálogo, solo vinculamos
+	            producto.setCatalogo(catalogoOpt.get());
+	            producto.setPersonalizado(false);
+	        } else {
+	            // No está en el catálogo → lo agregamos silenciosamente
+	            ProductoCatalogo nuevo = new ProductoCatalogo();
+	            nuevo.setNombre(producto.getNombreProducto());
+	            nuevo.setRubro(rubroOpt.get());
+	            ProductoCatalogo guardado = productoCatalogoRepository.save(nuevo);
+	            producto.setCatalogo(guardado);
+	            producto.setPersonalizado(false);
+	        }
 	    } else {
+	        // El rubro del usuario no existe en la BD (rubro muy nuevo)
 	        producto.setPersonalizado(true);
 	    }
 
