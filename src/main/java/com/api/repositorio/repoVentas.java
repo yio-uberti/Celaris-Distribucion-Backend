@@ -67,6 +67,6 @@ public interface repoVentas extends CrudRepository<Ventas, Integer>{
 	
 //	Metodo de repositorio para borrar registros del usuario
 	@Modifying
-	@Query("DELETE FROM venta vtp WHERE vtp.tenantId = :tenantId")
+	@Query("DELETE FROM Ventas v WHERE v.tenantId = :tenantId")
 	void deleteAllByTenantId(Long tenantId);
 }

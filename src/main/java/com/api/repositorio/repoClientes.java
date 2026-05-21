@@ -24,6 +24,6 @@ public interface repoClientes extends JpaRepository<clientes, Integer> {
 	
 	//Borrar registro relacionado al usuario
 	@Modifying
-	@Query("DELETE FROM cliente dv WHERE dv.tenantId = :tenantId")
+	@Query("DELETE FROM clientes c WHERE c.tenantId = :tenantId")
 	void deleteAllByTenantId(Long tenantId);
 }
