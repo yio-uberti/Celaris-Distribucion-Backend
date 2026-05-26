@@ -88,8 +88,8 @@ public class EmpleadoServicio {
     }
 
     private void enviarEmailInvitacion(String email, String token, String nombreEmpresa) {
-        String link = "celaris-distribuciones://activar?token=" + token; // ← deep link directo a la app
-
+        String link = "https://celaris-distribucion-backend.onrender.com/Api-Backend/activar?token=" + token;
+        
         SimpleMailMessage mensaje = new SimpleMailMessage();
         mensaje.setTo(email);
         mensaje.setSubject("Te invitaron a unirte a " + nombreEmpresa + " en Celaris");

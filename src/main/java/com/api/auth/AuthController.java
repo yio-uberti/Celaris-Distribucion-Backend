@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +26,7 @@ import com.api.tenant.Tenant;
 import com.api.tenant.TenantRepository;
 import com.api.user.EmailsEliminadosRepository;
 import com.api.user.Emails_eliminados;
+import com.api.user.InvitacionEmpleado;
 import com.api.user.InvitacionRepository;
 import com.api.user.SuscripcionRepository;
 import com.api.user.User;
@@ -92,6 +94,14 @@ public class AuthController {
 	public ResponseEntity<Boolean> tieneProductosSinPrecio(HttpServletRequest request) {
 		boolean sinPrecio = authService.tieneProductosSinPrecio(request);
 		return ResponseEntity.ok(sinPrecio);
+	}
+	
+	@GetMapping("/invitacion/{token}")
+	public ResponseEntity<?> getInvitacion(@PathVariable String token) {
+	    InvitacionEmpleado inv = invitacionRepository
+	        .findByTokenAndEstado(token, "PENDIENTE")
+	        .orElseThrow(() -> new RuntimeException("Inválida"));
+	    return ResponseEntity.ok(Map.of("email", inv.getEmail()));
 	}
 
 //	Metodo de login o inicio sesion
