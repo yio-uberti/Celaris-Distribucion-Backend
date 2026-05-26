@@ -1,5 +1,6 @@
 package com.api.auth;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,6 +23,8 @@ import com.api.repositorio.repoProducto;
 import com.api.repositorio.repoVentas;
 import com.api.tenant.Tenant;
 import com.api.tenant.TenantRepository;
+import com.api.user.EmailsEliminadosRepository;
+import com.api.user.Emails_eliminados;
 import com.api.user.InvitacionRepository;
 import com.api.user.SuscripcionRepository;
 import com.api.user.User;
@@ -56,6 +59,8 @@ public class AuthController {
 	private repoPagoDeuda pagoDeudaRepository;
 	@Autowired
 	private InvitacionRepository invitacionRepository;
+	@Autowired
+	private EmailsEliminadosRepository emailsEliminadosRepository; 
 
 //	Metodo para traer datos del usuario
 	@GetMapping("/me")
@@ -92,7 +97,16 @@ public class AuthController {
 //	Metodo de login o inicio sesion
 	@PostMapping("/login")
 	public ResponseEntity<Map<String, Object>> login(HttpServletRequest request) {
+		String email = (String) request.getAttribute("email");
+
+	    // Verificar si el email fue eliminado previamente
+	    if (email != null && emailsEliminadosRepository.existsByEmail(email)) {
+	        return ResponseEntity.status(403)
+	            .body(Map.of("error", "Esta cuenta fue eliminada y no puede volver a registrarse."));
+	    }
+		
 		boolean isNewUser = authService.registerIfNotExists(request);
+		
 		return ResponseEntity.ok(Map.of("isNewUser", isNewUser));
 	}
 
@@ -139,14 +153,23 @@ public class AuthController {
 	@Transactional
 	@DeleteMapping("/borrar-usuario")
 	public ResponseEntity<?> borrar(HttpServletRequest request) {
-		System.out.println(">>> ENTRANDO A BORRAR USUARIO"); // ← agregá
 		try {
 			String firebaseUid = (String) request.getAttribute("firebaseUid");
-			System.out.println(">>> UID: " + firebaseUid);
-
+			String email = (String) request.getAttribute("email"); 
+			
 			User user = userRepository.findByFirebaseUid(firebaseUid)
 					.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+			// Guardar email en lista negra ANTES de borrar todo
+	        if (email != null) {
+	            Emails_eliminados emailEliminado = Emails_eliminados.builder()
+	                .email(email)
+	                .fechaEliminacion(LocalDateTime.now())
+	                .build();
+	            emailsEliminadosRepository.save(emailEliminado);
+	        }
+			
+			
 			Long tenantId = user.getTenant().getId();
 			Long userId = user.getId();
 
