@@ -139,8 +139,10 @@ public class AuthController {
 	@Transactional
 	@DeleteMapping("/borrar-usuario")
 	public ResponseEntity<?> borrar(HttpServletRequest request) {
+		System.out.println(">>> ENTRANDO A BORRAR USUARIO"); // ← agregá
 		try {
 			String firebaseUid = (String) request.getAttribute("firebaseUid");
+			System.out.println(">>> UID: " + firebaseUid);
 
 			User user = userRepository.findByFirebaseUid(firebaseUid)
 					.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
