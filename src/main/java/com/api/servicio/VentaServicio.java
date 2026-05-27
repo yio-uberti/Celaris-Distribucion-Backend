@@ -3,6 +3,7 @@ package com.api.servicio;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,7 +93,7 @@ public class VentaServicio {
 		// Crear la venta base
 		Ventas venta = new Ventas();
 		venta.setCliente(cliente);
-		venta.setFecha_hora(LocalDateTime.now());
+		venta.setFecha_hora(LocalDateTime.now(ZoneId.of("America/Argentina/Buenos_Aires")));
 		venta.setFechaEntrega(fechaEntrega != null ? fechaEntrega : hoy);
 		venta.setEstado(esReservada ? "RESERVADA" : "REGISTRADA");
 		venta.setTenantId(tenantId);
