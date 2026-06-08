@@ -19,6 +19,7 @@ import com.api.user.UserRepository;
 import com.mercadopago.client.preapproval.PreApprovalAutoRecurringCreateRequest;
 import com.mercadopago.client.preapproval.PreapprovalClient;
 import com.mercadopago.client.preapproval.PreapprovalCreateRequest;
+import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.resources.preapproval.Preapproval;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,6 +50,7 @@ public class MercadoPagoController {
 	        PreapprovalCreateRequest preapprovalRequest = PreapprovalCreateRequest.builder()
 	            .reason(esAnual ? "Celaris - Plan Premium Anual" : "Celaris - Plan Premium Mensual")
 	            .externalReference(firebaseUid + "|" + req.getPlan())
+	            .payerEmail("test@example.com") 
 	            .autoRecurring(
 	                PreApprovalAutoRecurringCreateRequest.builder()
 	                    .frequency(esAnual ? 12 : 1)
@@ -69,24 +71,54 @@ public class MercadoPagoController {
 	            put("initPoint", preapproval.getInitPoint());
 	        }});
 
-	    } catch (com.mercadopago.exceptions.MPApiException e) {
-	        System.out.println("❌ ERROR MP API - DETALLES:");
-	        System.out.println("Clase excepción: " + e.getClass().getName());
+	    } catch (MPApiException e) {
+	    	System.out.println("\n❌ ERROR MP API - DETALLES COMPLETOS:");
+	        System.out.println("═══════════════════════════════════");
 	        System.out.println("Mensaje: " + e.getMessage());
 	        
-	        // Sacar toda la información disponible
-	        e.printStackTrace(System.out);
-	        
-	        // Intentar acceder a campos de la excepción
+	        // Sacar el status code
 	        try {
-	            var field = e.getClass().getDeclaredField("apiResponse");
-	            if (field != null) {
-	                field.setAccessible(true);
-	                System.out.println("API Response: " + field.get(e));
+	            var responseField = e.getClass().getDeclaredField("apiResponse");
+	            responseField.setAccessible(true);
+	            Object apiResponse = responseField.get(e);
+	            
+	            System.out.println("\n📋 MPResponse encontrado: " + apiResponse.getClass().getName());
+	            
+	            // Intentar acceder al status code
+	            try {
+	                var statusCodeMethod = apiResponse.getClass().getMethod("getStatusCode");
+	                int statusCode = (Integer) statusCodeMethod.invoke(apiResponse);
+	                System.out.println("Status Code: " + statusCode);
+	            } catch (Exception ex) {
+	                System.out.println("No se pudo obtener status code");
 	            }
+	            
+	            // Intentar acceder al content/body
+	            try {
+	                var contentField = apiResponse.getClass().getDeclaredField("content");
+	                contentField.setAccessible(true);
+	                String content = (String) contentField.get(apiResponse);
+	                System.out.println("\n📄 Response Body:");
+	                System.out.println(content);
+	            } catch (Exception ex) {
+	                System.out.println("No se pudo obtener content");
+	            }
+	            
+	            // Intentar acceder a la respuesta como Map
+	            try {
+	                var bodyField = apiResponse.getClass().getDeclaredField("body");
+	                bodyField.setAccessible(true);
+	                Object body = bodyField.get(apiResponse);
+	                System.out.println("\n📦 Response Body object: " + body);
+	            } catch (Exception ex) {
+	                System.out.println("No se pudo obtener body");
+	            }
+	            
 	        } catch (Exception ex) {
-	            System.out.println("No se pudo extraer apiResponse");
+	            System.out.println("Error extrayendo apiResponse: " + ex.getMessage());
 	        }
+	        
+	        System.out.println("═══════════════════════════════════\n");
 	        
 	        return ResponseEntity.status(500).body(new java.util.HashMap<String, Object>() {{
 	            put("error", "MercadoPago API Error");
