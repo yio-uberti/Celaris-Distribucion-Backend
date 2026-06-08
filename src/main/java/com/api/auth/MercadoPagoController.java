@@ -39,6 +39,11 @@ public class MercadoPagoController {
 	    String firebaseUid = (String) httpRequest.getAttribute("firebaseUid");
 
 	    try {
+	        System.out.println("🔍 REQUEST:");
+	        System.out.println("   Plan: " + req.getPlan());
+	        System.out.println("   Monto: " + req.getMonto());
+	        System.out.println("   Firebase UID: " + firebaseUid);
+
 	        boolean esAnual = req.getPlan().equals("PREMIUM_ANUAL");
 
 	        PreapprovalCreateRequest preapprovalRequest = PreapprovalCreateRequest.builder()
@@ -46,34 +51,55 @@ public class MercadoPagoController {
 	            .externalReference(firebaseUid + "|" + req.getPlan())
 	            .autoRecurring(
 	                PreApprovalAutoRecurringCreateRequest.builder()
-	                    .frequency(esAnual ? 12 : 1)          // cada cuántos períodos
-	                    .frequencyType(esAnual ? "months" : "months")
-	                    .transactionAmount(req.getMonto())     // lo que vos querés cobrar
+	                    .frequency(esAnual ? 12 : 1)
+	                    .frequencyType("months")
+	                    .transactionAmount(req.getMonto())
 	                    .currencyId("ARS")
 	                    .build()
 	            )
 	            .backUrl("https://celaris-distribucion-backend.onrender.com")
-//	            .notificationUrl("https://celaris-distribucion-backend.onrender.com/Api-Backend/mercado-pago/webhook")
 	            .build();
 
+	        System.out.println("📤 Enviando a MercadoPago...");
 	        PreapprovalClient client = new PreapprovalClient();
 	        Preapproval preapproval = client.create(preapprovalRequest);
 
-	        // El usuario va a esta URL a confirmar la suscripción
+	        System.out.println("✅ Preapproval creado: " + preapproval.getId());
 	        return ResponseEntity.ok(new java.util.HashMap<String, String>() {{
 	            put("initPoint", preapproval.getInitPoint());
 	        }});
 
+	    } catch (com.mercadopago.exceptions.MPApiException e) {
+	        System.out.println("❌ ERROR MP API - DETALLES:");
+	        System.out.println("Clase excepción: " + e.getClass().getName());
+	        System.out.println("Mensaje: " + e.getMessage());
+	        
+	        // Sacar toda la información disponible
+	        e.printStackTrace(System.out);
+	        
+	        // Intentar acceder a campos de la excepción
+	        try {
+	            var field = e.getClass().getDeclaredField("apiResponse");
+	            if (field != null) {
+	                field.setAccessible(true);
+	                System.out.println("API Response: " + field.get(e));
+	            }
+	        } catch (Exception ex) {
+	            System.out.println("No se pudo extraer apiResponse");
+	        }
+	        
+	        return ResponseEntity.status(500).body(new java.util.HashMap<String, Object>() {{
+	            put("error", "MercadoPago API Error");
+	            put("message", e.getMessage());
+	        }});
+	        
 	    } catch (Exception e) {
-	    	 e.printStackTrace();
-	         System.out.println("❌ ERROR EN PREAPPROVAL: " + e.getMessage());
-	         System.out.println("📋 Stack trace:");
-	         e.printStackTrace(System.out);
-	         
-	         return ResponseEntity.status(500).body(new java.util.HashMap<String, String>() {{
-	             put("error", e.getMessage());
-	             put("tipo", e.getClass().getSimpleName());
-	         }});
+	        System.out.println("❌ ERROR GENÉRICO:");
+	        e.printStackTrace(System.out);
+	        return ResponseEntity.status(500).body(new java.util.HashMap<String, Object>() {{
+	            put("error", e.getClass().getSimpleName());
+	            put("message", e.getMessage());
+	        }});
 	    }
 	}
 	
