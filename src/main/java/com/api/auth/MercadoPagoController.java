@@ -16,6 +16,7 @@ import com.api.user.Suscripcion;
 import com.api.user.SuscripcionRepository;
 import com.api.user.User;
 import com.api.user.UserRepository;
+import com.mercadopago.MercadoPagoConfig;
 import com.mercadopago.client.preapproval.PreApprovalAutoRecurringCreateRequest;
 import com.mercadopago.client.preapproval.PreapprovalClient;
 import com.mercadopago.client.preapproval.PreapprovalCreateRequest;
@@ -40,17 +41,26 @@ public class MercadoPagoController {
 	    String firebaseUid = (String) httpRequest.getAttribute("firebaseUid");
 
 	    try {
+	    	String token = System.getenv("MP_ACCESS_TOKEN");
+
+	    	System.out.println("TOKEN NULL? " + (token == null));
+	    	System.out.println("TOKEN LENGTH: " +
+	    	    (token != null ? token.length() : 0));
+
+	    	MercadoPagoConfig.setAccessToken(token);
 	        System.out.println("🔍 REQUEST:");
 	        System.out.println("   Plan: " + req.getPlan());
 	        System.out.println("   Monto: " + req.getMonto());
 	        System.out.println("   Firebase UID: " + firebaseUid);
 
 	        boolean esAnual = req.getPlan().equals("PREMIUM_ANUAL");
+	        User user = userRepository.findByFirebaseUid(firebaseUid).orElseThrow();
+
 
 	        PreapprovalCreateRequest preapprovalRequest = PreapprovalCreateRequest.builder()
 	            .reason(esAnual ? "Celaris - Plan Premium Anual" : "Celaris - Plan Premium Mensual")
 	            .externalReference(firebaseUid + "|" + req.getPlan())
-	            .payerEmail("test@example.com") 
+	            .payerEmail(user.getEmail()) 
 	            .autoRecurring(
 	                PreApprovalAutoRecurringCreateRequest.builder()
 	                    .frequency(esAnual ? 12 : 1)
