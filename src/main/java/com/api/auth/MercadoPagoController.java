@@ -65,7 +65,15 @@ public class MercadoPagoController {
 	        }});
 
 	    } catch (Exception e) {
-	        return ResponseEntity.status(500).body("Error: " + e.getMessage());
+	    	 e.printStackTrace();
+	         System.out.println("❌ ERROR EN PREAPPROVAL: " + e.getMessage());
+	         System.out.println("📋 Stack trace:");
+	         e.printStackTrace(System.out);
+	         
+	         return ResponseEntity.status(500).body(new java.util.HashMap<String, String>() {{
+	             put("error", e.getMessage());
+	             put("tipo", e.getClass().getSimpleName());
+	         }});
 	    }
 	}
 	
