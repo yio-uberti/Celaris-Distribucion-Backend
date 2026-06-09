@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,6 +57,30 @@ public class conVentas {
 	        @RequestParam(required = false) String tipoPago) {
 	    List<Ventas> ventas = ventaService.getHistorial(request, fecha, tipoPago);
 	    return ResponseEntity.ok(ventas); // el cliente ya viene dentro de cada venta con su saldoDeudor
+	}
+	
+	@GetMapping("/buscar-por-fechas")
+	public ResponseEntity<List<Ventas>> buscarPorFechas(
+			@RequestParam(value = "fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+			@RequestParam(value = "fechaFin", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
+			HttpServletRequest request) {
+		try {
+			List<Ventas> ventas = ventaService.getVentasPorRangoDeFechas(request, fechaInicio, fechaFin);
+			return ResponseEntity.ok(ventas);
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+
+	@GetMapping("/hoy")
+	public ResponseEntity<List<Ventas>> getVentasHoy(HttpServletRequest request) {
+		try {
+			LocalDate hoy = LocalDate.now();
+			List<Ventas> ventas = ventaService.getVentasPorRangoDeFechas(request, hoy, hoy);
+			return ResponseEntity.ok(ventas);
+		} catch (Exception e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
 	}
 
 //	Metodo para registrar una venta 

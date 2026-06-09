@@ -65,6 +65,7 @@ public class VentaServicio {
 	public List<Ventas> getReservadas(HttpServletRequest request) {
 		return ventaRepository.findAllByTenantIdAndEstado(getTenantId(request), "RESERVADA");
 	}
+	
 
 	// GET - top 5 productos del dia
 	public List<top5productos> getTop5(HttpServletRequest request) {
@@ -78,6 +79,29 @@ public class VentaServicio {
 			return ventaRepository.findByFecha(tenantId, fecha);
 		}
 		return ventaRepository.findByFechaAndTipoPago(tenantId, fecha, tipoPago);
+	}
+	
+	// GET - buscar ventas por rango de fechas
+	public List<Ventas> getVentasPorRangoDeFechas(HttpServletRequest request, LocalDate fechaInicio, LocalDate fechaFin) {
+	    Long tenantId = getTenantId(request);
+	    
+	    // Si fechaFin es null, usar la fecha de inicio como fecha fin
+	    if (fechaFin == null) {
+	        fechaFin = fechaInicio;
+	    }
+	    
+	    // Asegurar que fechaInicio <= fechaFin
+	    if (fechaInicio.isAfter(fechaFin)) {
+	        LocalDate temp = fechaInicio;
+	        fechaInicio = fechaFin;
+	        fechaFin = temp;
+	    }
+	    
+	    // Convertir a LocalDateTime para hacer la consulta
+	    LocalDateTime inicioDelDia = fechaInicio.atStartOfDay();
+	    LocalDateTime finDelDia = fechaFin.atTime(23, 59, 59);
+	    
+	    return ventaRepository.findByTenantIdAndFecha_horaBetween(tenantId, inicioDelDia, finDelDia);
 	}
 
 	// POST — crear venta completa con detalles y pagos
