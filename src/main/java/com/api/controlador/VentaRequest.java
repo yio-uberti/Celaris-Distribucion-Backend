@@ -18,6 +18,7 @@ public class VentaRequest {
 	    private List<DetalleRequest> detalles;
 	    private List<PagoRequest> pagos;
 	    private LocalDate fechaEntrega;
+	    private Boolean esReservada;
 
 	    @Data
 	    @Builder

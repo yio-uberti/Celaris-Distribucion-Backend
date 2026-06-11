@@ -112,7 +112,11 @@ public class VentaServicio {
 
 		LocalDate fechaEntrega = req.getFechaEntrega();
 		LocalDate hoy = LocalDate.now();
-		boolean esReservada = fechaEntrega != null && fechaEntrega.isAfter(hoy);
+		
+		// Usar el estado que viene del frontend
+	    boolean esReservada = req.getEsReservada() != null 
+	        ? req.getEsReservada() 
+	        : (fechaEntrega != null && fechaEntrega.isAfter(hoy));
 
 		// Crear la venta base
 		Ventas venta = new Ventas();
