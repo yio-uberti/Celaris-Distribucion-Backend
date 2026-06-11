@@ -53,11 +53,11 @@ public class Ventas {
 	private LocalDate fechaEntrega;
 	
 	 // Lista de detalles y pagos — JPA los carga
-	@OneToMany(mappedBy = "venta", cascade = CascadeType.ALL)
+	@OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference
 	private List<DetalleVenta> detalles;
 	
-	@OneToMany(mappedBy = "venta", cascade = CascadeType.ALL)
+	@OneToMany(mappedBy = "venta", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference("venta-pagos")
 	private List<VentaTipoPago> pagos;
 	

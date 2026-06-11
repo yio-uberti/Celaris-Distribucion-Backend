@@ -249,4 +249,22 @@ public class VentaServicio {
 
 	    return ventaRepository.save(venta);
 	}
+	
+	// DELETE - borrar ventas en lote
+	@Transactional
+	public void deleteLote(List<Integer> ids, HttpServletRequest request) {
+	    Long tenantId = getTenantId(request);
+	    
+	    // Validar que todas las ventas pertenezcan al tenant
+	    List<Ventas> ventas = (List<Ventas>) ventaRepository.findAllById(ids);
+	    
+	    for (Ventas venta : ventas) {
+	        if (!venta.getTenantId().equals(tenantId)) {
+	            throw new RuntimeException("No tienes permisos para borrar esta venta");
+	        }
+	    }
+	    
+	    // Borrar en cascada (VentaTipoPago y DetalleVenta se borran automáticamente)
+	    ventaRepository.deleteAllById(ids);
+	}
 }

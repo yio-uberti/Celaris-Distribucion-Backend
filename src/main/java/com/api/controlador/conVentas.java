@@ -105,7 +105,36 @@ public class conVentas {
 		return ResponseEntity.ok(ventaService.confirmarEntrega(id, request, req));
 	}
 	
-//	Metodo para borrar o cancelar una venta
+	
+	//Para borrra una lista de ventas en cascada
+	// Clase interna para recibir las IDs
+	public static class DeleteLoteRequest {
+	    private List<Integer> ids;
+	    
+	    public List<Integer> getIds() {
+	        return ids;
+	    }
+	    
+	    public void setIds(List<Integer> ids) {
+	        this.ids = ids;
+	    }
+	}
+
+	// Endpoint DELETE en lote
+	@DeleteMapping("/lote")
+	public ResponseEntity<?> deleteLote(
+	    @RequestBody DeleteLoteRequest request,
+	    HttpServletRequest httpRequest) {
+	    try {
+	        ventaService.deleteLote(request.getIds(), httpRequest);
+	        return ResponseEntity.noContent().build();
+	    } catch (RuntimeException e) {
+	        return ResponseEntity.status(403).body("Error: " + e.getMessage());
+	    }
+	}
+
+	
+//	Metodo para borrar o cancelar una venta individual
 	@DeleteMapping("/{id}")
 	public ResponseEntity<?> delete(@PathVariable Integer id, HttpServletRequest request) {
 	    Long tenantId = ventaService.getTenantIdPublic(request);
