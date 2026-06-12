@@ -14,6 +14,9 @@ public interface InvitacionRepository extends CrudRepository<InvitacionEmpleado,
 
 	Optional<InvitacionEmpleado> findByEmailAndTenantId(String email, Long tenantId);
 	
+	@Query("SELECT i FROM InvitacionEmpleado i WHERE i.email = :email AND i.tenant.id = :tenantId ORDER BY i.creadoEn DESC LIMIT 1")
+	Optional<InvitacionEmpleado> findUltimaByEmailAndTenantId(String email, Long tenantId);
+	
 	@Modifying
 	@Transactional
 	@Query("DELETE FROM InvitacionEmpleado i WHERE i.tenant.id = :tenantId")

@@ -45,10 +45,10 @@ public class EmpleadoServicio {
         	    .stream()
         	    .map(u -> {
         	        // Buscar la invitación de este empleado para obtener creadoEn
-        	        LocalDateTime creadoEn = invitacionRepository
-        	            .findByEmailAndTenantId(u.getEmail(), tenantId)
-        	            .map(InvitacionEmpleado::getCreadoEn)
-        	            .orElse(null);
+        	    	LocalDateTime creadoEn = invitacionRepository
+            	            .findByEmailAndTenantId(u.getEmail(), tenantId)
+            	            .map(InvitacionEmpleado::getCreadoEn)
+            	            .orElse(null);
 
         	        return new EmpleadoRequest(
         	            u.getId(),
