@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 public interface InvitacionRepository extends CrudRepository<InvitacionEmpleado, Long>{
 	Optional<InvitacionEmpleado> findByTokenAndEstado(String token, String estado);
 
+	Optional<InvitacionEmpleado> findByEmailAndTenantId(String email, Long tenantId);
+	
 	@Modifying
 	@Transactional
 	@Query("DELETE FROM InvitacionEmpleado i WHERE i.tenant.id = :tenantId")

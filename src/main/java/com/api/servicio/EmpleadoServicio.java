@@ -43,15 +43,24 @@ public class EmpleadoServicio {
         // Todos los users del mismo tenant excepto él mismo
         return userRepository.findByTenantIdAndIdNot(tenantId, owner.getId())
         	    .stream()
-        	    .map(u -> new EmpleadoRequest(
-        	        u.getId(),
-        	        u.getNombre(),
-        	        u.getApellido(),
-        	        u.getEmail(),
-        	        u.getDni(),
-        	        u.getRol().getNombre(),
-        	        u.getActivo()
-        	    ))
+        	    .map(u -> {
+        	        // Buscar la invitación de este empleado para obtener creadoEn
+        	        LocalDateTime creadoEn = invitacionRepository
+        	            .findByEmailAndTenantId(u.getEmail(), tenantId)
+        	            .map(InvitacionEmpleado::getCreadoEn)
+        	            .orElse(null);
+
+        	        return new EmpleadoRequest(
+        	            u.getId(),
+        	            u.getNombre(),
+        	            u.getApellido(),
+        	            u.getEmail(),
+        	            u.getDni(),
+        	            u.getRol().getNombre(),
+        	            u.getActivo(),
+        	            creadoEn  // ← nuevo
+        	        );
+        	    })
         	    .toList();
     }
 

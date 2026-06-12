@@ -1,6 +1,7 @@
 package com.api.controlador;
 
 import java.math.BigInteger;
+import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,4 +20,5 @@ public class EmpleadoRequest {
     private BigInteger dni;
     private String rol;
     private Boolean activo;
+    private LocalDateTime creadoEn;
 }
