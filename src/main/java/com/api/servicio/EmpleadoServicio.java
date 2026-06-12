@@ -101,4 +101,27 @@ public class EmpleadoServicio {
         );
         mailSender.send(mensaje);
     }
+    
+ // En EmpleadoServicio
+    public void revocarEmpleado(HttpServletRequest request, Long empleadoId) {
+        String firebaseUid = (String) request.getAttribute("firebaseUid");
+        User owner = userRepository.findByFirebaseUid(firebaseUid)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        String rol = owner.getRol().getNombre();
+        if (!rol.equals("OWNER") && !rol.equals("ADMIN")) {
+            throw new RuntimeException("Sin permisos");
+        }
+
+        User empleado = userRepository.findById(empleadoId)
+            .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+
+        // Verificar que pertenece al mismo tenant
+        if (!empleado.getTenant().getId().equals(owner.getTenant().getId())) {
+            throw new RuntimeException("Sin permisos sobre este empleado");
+        }
+
+        empleado.setActivo(false);
+        userRepository.save(empleado);
+    }
 }

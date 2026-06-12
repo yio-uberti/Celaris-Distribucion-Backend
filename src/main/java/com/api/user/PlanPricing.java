@@ -30,10 +30,10 @@ public class PlanPricing {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false)
+    @Column(name = "plan_id", nullable = false)
     private String planId;  // PREMIUM_MENSUAL, PREMIUM_ANUAL
     
-    @Column(nullable = false)
+    @Column(name = "tenant_tipo", nullable = false)
     private String tenantTipo;  // AUTONOMO, EMPRESA
     
     @Column(nullable = false)
@@ -46,8 +46,10 @@ public class PlanPricing {
     private boolean activo = true;
     
     @CreationTimestamp
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
     
     @UpdateTimestamp
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 }

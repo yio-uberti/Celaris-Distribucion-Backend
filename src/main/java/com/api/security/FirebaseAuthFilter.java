@@ -38,31 +38,37 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
 			String token = authHeader.substring(7);
 
 			try {
-			    FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
+				FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
 
-			    String firebaseUid = decodedToken.getUid();
-			    request.setAttribute("firebaseUid", firebaseUid);
-			    request.setAttribute("email", decodedToken.getEmail());
+				String firebaseUid = decodedToken.getUid();
+				request.setAttribute("firebaseUid", firebaseUid);
+				request.setAttribute("email", decodedToken.getEmail());
 
-			    // Solo buscar el usuario si ya existe (para login)
-			    // Para register, puede no existir todavía
-			    Optional<User> userOpt = userRepository.findByFirebaseUid(firebaseUid);
+				// ✅ AGREGAR ACÁ — después de setear el uid
+	            User user = userRepository.findByFirebaseUid(firebaseUid).orElse(null);
+	            if (user != null && Boolean.FALSE.equals(user.getActivo())) {
+	                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+	                response.setContentType("application/json");
+	                response.getWriter().write("{\"error\": \"Cuenta deshabilitada\"}");
+	                return; // corta todo, no llega al controller
+	            }
+				
+				Optional<User> userOpt = userRepository.findByFirebaseUid(firebaseUid);
 
-//			    if (userOpt.isPresent()) {
-			        UsernamePasswordAuthenticationToken authentication =
-			            new UsernamePasswordAuthenticationToken(firebaseUid, null, List.of());
-			        
-			        SecurityContextHolder.getContext().setAuthentication(authentication);
-//			    }
-			    // Si no existe, dejamos pasar igual para que /register lo cree
+				UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+						firebaseUid, null, List.of());
+
+				SecurityContextHolder.getContext().setAuthentication(authentication);
+
+				// Si no existe, dejamos pasar igual para que /register lo cree
 
 			} catch (FirebaseAuthException e) {
-			    // Solo rechazar si el TOKEN de Firebase es inválido
-			    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-			    return;
+				// Solo rechazar si el TOKEN de Firebase es inválido
+				response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+				return;
 			} catch (Exception e) {
-			    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-			    return;
+				response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+				return;
 			}
 		}
 
