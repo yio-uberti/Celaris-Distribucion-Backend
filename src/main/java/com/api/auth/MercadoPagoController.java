@@ -2,6 +2,8 @@ package com.api.auth;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,166 +45,172 @@ public class MercadoPagoController {
 
 	@PostMapping("/crear-pago")
 	public ResponseEntity<?> crearPago(@RequestBody PagoMp req, HttpServletRequest httpRequest) {
-	    String firebaseUid = (String) httpRequest.getAttribute("firebaseUid");
+		String firebaseUid = (String) httpRequest.getAttribute("firebaseUid");
+		String tenantTipo = (String) httpRequest.getAttribute("tenantTipo");
 
-	    try {
-	    	String token = System.getenv("MP_ACCESS_TOKEN");
-	    	MercadoPagoConfig.setAccessToken(token);
-	    	
-	        System.out.println("🔍 REQUEST:");
-	        System.out.println("   Plan: " + req.getPlan());
-	        System.out.println("   Firebase UID: " + firebaseUid);
-	        
-	     // ✅ NUEVO: Obtener precio desde BD (no del cliente)
-	        PlanPricing precioActual = planPricingRepository
-	            .findCurrentPrice(req.getPlan(), req.getTenantTipo())  // ← req ahora tiene tenantTipo
-	            .orElseThrow(() -> new RuntimeException("Plan no disponible"));
-	        
-	        BigDecimal montoFinal = precioActual.getMonto();
-	        System.out.println("   Monto (desde BD): " + montoFinal);
+		try {
+			String token = System.getenv("MP_ACCESS_TOKEN");
+			MercadoPagoConfig.setAccessToken(token);
 
-	        boolean esAnual = req.getPlan().equals("PREMIUM_ANUAL");
-	        User user = userRepository.findByFirebaseUid(firebaseUid).orElseThrow();
+			System.out.println("🔍 REQUEST:");
+			System.out.println("   Plan: " + req.getPlan());
+			System.out.println("   Firebase UID: " + firebaseUid);
+			System.out.println("   Tenant: " + tenantTipo);
 
+			// Obtener precio desde BD (no del cliente)
+			List<PlanPricing> precios = planPricingRepository.findByPlanAndTenant(req.getPlan(), req.getTenantTipo());
 
-	        PreapprovalCreateRequest preapprovalRequest = PreapprovalCreateRequest.builder()
-	            .reason(esAnual ? "Celaris - Plan Premium Anual" : "Celaris - Plan Premium Mensual")
-	            .externalReference(firebaseUid + "|" + req.getPlan())
-	            .payerEmail(user.getEmail()) 
-	            .autoRecurring(
-	                PreApprovalAutoRecurringCreateRequest.builder()
-	                    .frequency(esAnual ? 12 : 1)
-	                    .frequencyType("months")
-	                    .transactionAmount((BigDecimal) montoFinal)
-	                    .currencyId("ARS")
-	                    .build()
-	            )
-	            .backUrl("https://celaris-distribucion-backend.onrender.com")
-	            .build();
+			if (precios.isEmpty()) {
+				throw new RuntimeException("Plan no disponible");
+			}
 
-	        System.out.println("📤 Enviando a MercadoPago...");
-	        PreapprovalClient client = new PreapprovalClient();
-	        Preapproval preapproval = client.create(preapprovalRequest);
+			// El primero de la lista es el más reciente (ORDER BY createdAt DESC)
+			PlanPricing precioActual = precios.get(0);
+			BigDecimal montoFinal = precioActual.getMonto();
+			System.out.println("   Monto (desde BD): $" + montoFinal);
 
-	        System.out.println("✅ Preapproval creado: " + preapproval.getId());
-	        return ResponseEntity.ok(new java.util.HashMap<String, String>() {{
-	            put("initPoint", preapproval.getInitPoint());
-	        }});
+			boolean esAnual = req.getPlan().equals("PREMIUM_ANUAL");
+			User user = userRepository.findByFirebaseUid(firebaseUid).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-	    } catch (MPApiException e) {
-	    	System.out.println("\n❌ ERROR MP API - DETALLES COMPLETOS:");
-	        System.out.println("═══════════════════════════════════");
-	        System.out.println("Mensaje: " + e.getMessage());
-	        
-	        // Sacar el status code
-	        try {
-	            var responseField = e.getClass().getDeclaredField("apiResponse");
-	            responseField.setAccessible(true);
-	            Object apiResponse = responseField.get(e);
-	            
-	            System.out.println("\n📋 MPResponse encontrado: " + apiResponse.getClass().getName());
-	            
-	            // Intentar acceder al status code
-	            try {
-	                var statusCodeMethod = apiResponse.getClass().getMethod("getStatusCode");
-	                int statusCode = (Integer) statusCodeMethod.invoke(apiResponse);
-	                System.out.println("Status Code: " + statusCode);
-	            } catch (Exception ex) {
-	                System.out.println("No se pudo obtener status code");
-	            }
-	            
-	            // Intentar acceder al content/body
-	            try {
-	                var contentField = apiResponse.getClass().getDeclaredField("content");
-	                contentField.setAccessible(true);
-	                String content = (String) contentField.get(apiResponse);
-	                System.out.println("\n📄 Response Body:");
-	                System.out.println(content);
-	            } catch (Exception ex) {
-	                System.out.println("No se pudo obtener content");
-	            }
-	            
-	            // Intentar acceder a la respuesta como Map
-	            try {
-	                var bodyField = apiResponse.getClass().getDeclaredField("body");
-	                bodyField.setAccessible(true);
-	                Object body = bodyField.get(apiResponse);
-	                System.out.println("\n📦 Response Body object: " + body);
-	            } catch (Exception ex) {
-	                System.out.println("No se pudo obtener body");
-	            }
-	            
-	        } catch (Exception ex) {
-	            System.out.println("Error extrayendo apiResponse: " + ex.getMessage());
-	        }
-	        
-	        System.out.println("═══════════════════════════════════\n");
-	        
-	        return ResponseEntity.status(500).body(new java.util.HashMap<String, Object>() {{
-	            put("error", "MercadoPago API Error");
-	            put("message", e.getMessage());
-	        }});
-	        
-	    } catch (Exception e) {
-	        System.out.println("❌ ERROR GENÉRICO:");
-	        e.printStackTrace(System.out);
-	        return ResponseEntity.status(500).body(new java.util.HashMap<String, Object>() {{
-	            put("error", e.getClass().getSimpleName());
-	            put("message", e.getMessage());
-	        }});
-	    }
+			PreapprovalCreateRequest preapprovalRequest = PreapprovalCreateRequest.builder()
+					.reason(esAnual ? "Celaris - Plan Premium Anual" : "Celaris - Plan Premium Mensual")
+					.externalReference(firebaseUid + "|" + req.getPlan()).payerEmail(user.getEmail())
+					.autoRecurring(PreApprovalAutoRecurringCreateRequest
+							.builder()
+							.frequency(esAnual ? 12 : 1)
+							.frequencyType("months")
+							.transactionAmount(montoFinal)
+							.currencyId("ARS")
+							.build())
+					.backUrl("https://celaris-distribucion-backend.onrender.com").build();
+
+			System.out.println("📤 Enviando a MercadoPago...");
+			PreapprovalClient client = new PreapprovalClient();
+			Preapproval preapproval = client.create(preapprovalRequest);
+
+			System.out.println("✅ Preapproval creado: " + preapproval.getId());
+			return ResponseEntity.ok(new HashMap<String, String>() {
+				{
+					put("initPoint", preapproval.getInitPoint());
+				}
+			});
+
+		} catch (MPApiException e) {
+			System.out.println("\n❌ ERROR MP API - DETALLES COMPLETOS:");
+			System.out.println("═══════════════════════════════════");
+			System.out.println("Mensaje: " + e.getMessage());
+
+			// Sacar el status code
+			try {
+				var responseField = e.getClass().getDeclaredField("apiResponse");
+				responseField.setAccessible(true);
+				Object apiResponse = responseField.get(e);
+
+				System.out.println("\n📋 MPResponse encontrado: " + apiResponse.getClass().getName());
+
+				// Intentar acceder al status code
+				try {
+					var statusCodeMethod = apiResponse.getClass().getMethod("getStatusCode");
+					int statusCode = (Integer) statusCodeMethod.invoke(apiResponse);
+					System.out.println("Status Code: " + statusCode);
+				} catch (Exception ex) {
+					System.out.println("No se pudo obtener status code");
+				}
+
+				// Intentar acceder al content/body
+				try {
+					var contentField = apiResponse.getClass().getDeclaredField("content");
+					contentField.setAccessible(true);
+					String content = (String) contentField.get(apiResponse);
+					System.out.println("\n📄 Response Body:");
+					System.out.println(content);
+				} catch (Exception ex) {
+					System.out.println("No se pudo obtener content");
+				}
+
+				// Intentar acceder a la respuesta como Map
+				try {
+					var bodyField = apiResponse.getClass().getDeclaredField("body");
+					bodyField.setAccessible(true);
+					Object body = bodyField.get(apiResponse);
+					System.out.println("\n📦 Response Body object: " + body);
+				} catch (Exception ex) {
+					System.out.println("No se pudo obtener body");
+				}
+
+			} catch (Exception ex) {
+				System.out.println("Error extrayendo apiResponse: " + ex.getMessage());
+			}
+
+			System.out.println("═══════════════════════════════════\n");
+
+			return ResponseEntity.status(500).body(new java.util.HashMap<String, Object>() {
+				{
+					put("error", "MercadoPago API Error");
+					put("message", e.getMessage());
+				}
+			});
+
+		} catch (Exception e) {
+			System.out.println("❌ ERROR GENÉRICO:");
+			e.printStackTrace(System.out);
+			return ResponseEntity.status(500).body(new java.util.HashMap<String, Object>() {
+				{
+					put("error", e.getClass().getSimpleName());
+					put("message", e.getMessage());
+				}
+			});
+		}
 	}
-	
 
 	// ── 2. NUEVO — MP llama esto automáticamente cuando alguien paga ──
 	@PostMapping("/webhook")
 	public ResponseEntity<?> webhook(@RequestBody Map<String, Object> body) {
-	    try {
-	        String type = (String) body.get("type");
+		try {
+			String type = (String) body.get("type");
 
-	        // Suscripción creada/renovada
-	        if ("subscription_authorized_payment".equals(type)) {
-	            Map<?, ?> data = (Map<?, ?>) body.get("data");
-	            String preapprovalId = (String) data.get("id");
+			// Suscripción creada/renovada
+			if ("subscription_authorized_payment".equals(type)) {
+				Map<?, ?> data = (Map<?, ?>) body.get("data");
+				String preapprovalId = (String) data.get("id");
 
-	            PreapprovalClient client = new PreapprovalClient();
-	            Preapproval preapproval = client.get(preapprovalId);
+				PreapprovalClient client = new PreapprovalClient();
+				Preapproval preapproval = client.get(preapprovalId);
 
-	            if ("authorized".equals(preapproval.getStatus())) {
-	                String externalRef = preapproval.getExternalReference();
-	                String[] parts = externalRef.split("\\|");
-	                String firebaseUid = parts[0];
-	                String planNombre = parts[1];
+				if ("authorized".equals(preapproval.getStatus())) {
+					String externalRef = preapproval.getExternalReference();
+					String[] parts = externalRef.split("\\|");
+					String firebaseUid = parts[0];
+					String planNombre = parts[1];
 
-	                User user = userRepository.findByFirebaseUid(firebaseUid)
-	                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-	                Plan plan = planRepository.findByNombre(planNombre)
-	                    .orElseThrow(() -> new RuntimeException("Plan no encontrado"));
+					User user = userRepository.findByFirebaseUid(firebaseUid)
+							.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+					Plan plan = planRepository.findByNombre(planNombre)
+							.orElseThrow(() -> new RuntimeException("Plan no encontrado"));
 
-	                LocalDateTime vencimiento = planNombre.equals("PREMIUM_ANUAL")
-	                    ? LocalDateTime.now().plusYears(1)
-	                    : LocalDateTime.now().plusMonths(1);
+					LocalDateTime vencimiento = planNombre.equals("PREMIUM_ANUAL") ? LocalDateTime.now().plusYears(1)
+							: LocalDateTime.now().plusMonths(1);
 
-	                user.setPlan(plan);
-	                userRepository.save(user);
+					user.setPlan(plan);
+					userRepository.save(user);
 
-	                suscripcionRepository.cancelarActivas(user.getId());
+					suscripcionRepository.cancelarActivas(user.getId());
 
-	                Suscripcion sus = new Suscripcion();
-	                sus.setUser(user);
-	                sus.setPlan(plan);
-	                sus.setEstado("ACTIVA");
-	                sus.setInicio(LocalDateTime.now());
-	                sus.setVencimiento(vencimiento);
-	                sus.setMetodoPago("MERCADOPAGO");
-	                sus.setTokenPago(preapprovalId);
-	                suscripcionRepository.save(sus);
-	            }
-	        }
-	    } catch (Exception e) {
-	        System.out.println("Error en webhook: " + e.getMessage());
-	    }
-	    return ResponseEntity.ok().build();
+					Suscripcion sus = new Suscripcion();
+					sus.setUser(user);
+					sus.setPlan(plan);
+					sus.setEstado("ACTIVA");
+					sus.setInicio(LocalDateTime.now());
+					sus.setVencimiento(vencimiento);
+					sus.setMetodoPago("MERCADOPAGO");
+					sus.setTokenPago(preapprovalId);
+					suscripcionRepository.save(sus);
+				}
+			}
+		} catch (Exception e) {
+			System.out.println("Error en webhook: " + e.getMessage());
+		}
+		return ResponseEntity.ok().build();
 	}
-	
+
 }
