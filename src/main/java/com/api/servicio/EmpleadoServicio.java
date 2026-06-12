@@ -46,9 +46,11 @@ public class EmpleadoServicio {
         	    .map(u -> {
         	        // Buscar la invitación de este empleado para obtener creadoEn
         	    	LocalDateTime creadoEn = invitacionRepository
-            	            .findByEmailAndTenantId(u.getEmail(), tenantId)
-            	            .map(InvitacionEmpleado::getCreadoEn)
-            	            .orElse(null);
+        	    		    .findByEmailAndTenantIdOrderByCreadoEnDesc(u.getEmail(), tenantId)
+        	    		    .stream()
+        	    		    .findFirst()
+        	    		    .map(InvitacionEmpleado::getCreadoEn)
+        	    		    .orElse(null);
 
         	        return new EmpleadoRequest(
         	            u.getId(),

@@ -1,5 +1,6 @@
 package com.api.user;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Modifying;
@@ -14,8 +15,8 @@ public interface InvitacionRepository extends CrudRepository<InvitacionEmpleado,
 
 	Optional<InvitacionEmpleado> findByEmailAndTenantId(String email, Long tenantId);
 	
-	@Query("SELECT i FROM InvitacionEmpleado i WHERE i.email = :email AND i.tenant.id = :tenantId ORDER BY i.creadoEn DESC LIMIT 1")
-	Optional<InvitacionEmpleado> findUltimaByEmailAndTenantId(String email, Long tenantId);
+	@Query("SELECT i FROM InvitacionEmpleado i WHERE i.email = :email AND i.tenant.id = :tenantId ORDER BY i.creadoEn DESC")
+	List<InvitacionEmpleado> findByEmailAndTenantIdOrderByCreadoEnDesc(String email, Long tenantId);
 	
 	@Modifying
 	@Transactional
