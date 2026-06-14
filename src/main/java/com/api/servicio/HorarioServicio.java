@@ -20,6 +20,8 @@ public class HorarioServicio {
     private HorarioEmpleadoRepository horarioRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
     
     // GET - obtener horarios de un empleado
     public List<HorarioEmpleado> getHorariosEmpleado(Long empleadoId, HttpServletRequest request) {
@@ -56,6 +58,7 @@ public class HorarioServicio {
         
         // Eliminar horarios anteriores
         horarioRepository.deleteByUserId(empleadoId);
+        entityManager.flush();
         
         // Guardar nuevos horarios
         List<HorarioEmpleado> nuevosHorarios = horarios.stream()
