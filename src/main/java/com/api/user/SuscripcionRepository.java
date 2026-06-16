@@ -1,5 +1,6 @@
 package com.api.user;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,4 +31,12 @@ public interface SuscripcionRepository extends CrudRepository<Suscripcion, Integ
 	@Transactional
 	@Query("UPDATE Suscripcion s SET s.estado = 'CANCELADA' WHERE s.user.id = :userId AND s.estado = 'ACTIVA'")
 	void cancelarActivas(@Param("userId") Long userId);
+    
+    // Obtener suscripciones que vencen hoy (para cobrar)
+    @Query("SELECT s FROM Suscripcion s WHERE s.estado = 'ACTIVA' AND s.proximaRenovacion <= :ahora")
+    List<Suscripcion> findByEstadoAndProximaRenovacionBeforeOrEqual(@Param("estado") String estado, @Param("ahora") LocalDateTime ahora);
+    
+    // O una versión más explícita:
+    @Query("SELECT s FROM Suscripcion s WHERE s.estado = 'ACTIVA' AND s.proximaRenovacion IS NOT NULL AND s.proximaRenovacion <= :ahora")
+    List<Suscripcion> findSuscripcionesParaRenovar(@Param("ahora") LocalDateTime ahora);
 }

@@ -21,12 +21,16 @@ import com.api.user.Suscripcion;
 import com.api.user.SuscripcionRepository;
 import com.api.user.User;
 import com.api.user.UserRepository;
-import com.mercadopago.MercadoPagoConfig;
-import com.mercadopago.client.preapproval.PreApprovalAutoRecurringCreateRequest;
-import com.mercadopago.client.preapproval.PreapprovalClient;
-import com.mercadopago.client.preapproval.PreapprovalCreateRequest;
+import com.mercadopago.client.payment.PaymentClient;
+import com.mercadopago.client.preference.PreferenceBackUrlsRequest;
+import com.mercadopago.client.preference.PreferenceClient;
+import com.mercadopago.client.preference.PreferenceItemRequest;
+import com.mercadopago.client.preference.PreferencePayerRequest;
+import com.mercadopago.client.preference.PreferenceRequest;
 import com.mercadopago.exceptions.MPApiException;
-import com.mercadopago.resources.preapproval.Preapproval;
+import com.mercadopago.exceptions.MPException;
+import com.mercadopago.resources.payment.Payment;
+import com.mercadopago.resources.preference.Preference;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -43,69 +47,77 @@ public class MercadoPagoController {
 	@Autowired
 	private PlanPricingRepository planPricingRepository;
 
+	// ── 1. CREAR PAGO (PREFERENCE) ──
 	@PostMapping("/crear-pago")
 	public ResponseEntity<?> crearPago(@RequestBody PagoMp req, HttpServletRequest httpRequest) {
 		String firebaseUid = (String) httpRequest.getAttribute("firebaseUid");
 		String tenantTipo = (String) httpRequest.getAttribute("tenantTipo");
 
-		try {
-			String token = System.getenv("MP_ACCESS_TOKEN");
-			MercadoPagoConfig.setAccessToken(token);
+		if (tenantTipo == null || tenantTipo.isEmpty()) {
+			tenantTipo = req.getTenantTipo();
+		}
 
-			System.out.println("🔍 REQUEST:");
+		try {
+			System.out.println("\n🔵 ══════════════════════════════════════");
+			System.out.println("   REQUEST CREAR PAGO (PREFERENCE)");
 			System.out.println("   Plan: " + req.getPlan());
 			System.out.println("   Firebase UID: " + firebaseUid);
 			System.out.println("   Tenant: " + tenantTipo);
 
-			// Obtener precio desde BD (no del cliente)
-			List<PlanPricing> precios = planPricingRepository.findByPlanAndTenant(req.getPlan(), req.getTenantTipo());
+			// Obtener precio ACTUAL desde BD
+			List<PlanPricing> precios = planPricingRepository.findByPlanAndTenant(req.getPlan(), tenantTipo);
 
 			if (precios.isEmpty()) {
-				throw new RuntimeException("Plan no disponible");
+				throw new RuntimeException("Plan no disponible para: " + req.getPlan() + " / " + tenantTipo);
 			}
 
-			// El primero de la lista es el más reciente (ORDER BY createdAt DESC)
 			PlanPricing precioActual = precios.get(0);
 			BigDecimal montoFinal = precioActual.getMonto();
-			System.out.println("   Monto (desde BD): $" + montoFinal + " ARS");
+			System.out.println("   Monto: $" + montoFinal + " ARS");
 
 			boolean esAnual = req.getPlan().equals("PREMIUM_ANUAL");
 			User user = userRepository.findByFirebaseUid(firebaseUid)
-					.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+					.orElseThrow(() -> new RuntimeException("Usuario no encontrado: " + firebaseUid));
 
-			PreapprovalCreateRequest preapprovalRequest = PreapprovalCreateRequest.builder()
-					.reason(esAnual ? "Celaris - Plan Premium Anual" : "Celaris - Plan Premium Mensual")
-					.externalReference(firebaseUid + "|" + req.getPlan()).payerEmail(user.getEmail())
-					.autoRecurring(PreApprovalAutoRecurringCreateRequest.builder().frequency(esAnual ? 12 : 1)
-							.frequencyType("months").transactionAmount(montoFinal).currencyId("ARS").build())
-					.backUrl("https://celaris-distribucion-backend.onrender.com").build();
+			// ✅ PREFERENCE para primer pago (SDK 3.1.0)
+			PreferenceItemRequest item = PreferenceItemRequest.builder()
+					.title("Celaris - Plan " + (esAnual ? "Premium Anual" : "Premium Mensual")).quantity((int) 1L)
+					.unitPrice(montoFinal).currencyId("ARS").build();
 
-			System.out.println("📤 Enviando a MercadoPago...");
-			PreapprovalClient client = new PreapprovalClient();
-			Preapproval preapproval = client.create(preapprovalRequest);
+			PreferencePayerRequest payer = PreferencePayerRequest.builder().email(user.getEmail()).build();
 
-			System.out.println("✅ Preapproval creado: " + preapproval.getId());
-			System.out.println("   ID: " + preapproval.getId());
-			System.out.println("   Status: " + preapproval.getStatus());
-			System.out.println("   Init Point: " + preapproval.getInitPoint());
+			PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
+					.success("https://celaris-distribucion-backend.onrender.com/success")
+					.failure("https://celaris-distribucion-backend.onrender.com/failure")
+					.pending("https://celaris-distribucion-backend.onrender.com/pending").build();
+
+			PreferenceRequest preferenceRequest = PreferenceRequest.builder().items(List.of(item))
+					.externalReference(firebaseUid + "|" + req.getPlan() + "|" + tenantTipo).payer(payer)
+					.backUrls(backUrls).autoReturn("approved").build();
+
+			System.out.println("   📤 Enviando a MercadoPago (PREFERENCE)...");
+			PreferenceClient client = new PreferenceClient();
+			Preference preference = client.create(preferenceRequest);
+
+			System.out.println("   ✅ PREFERENCE CREADO");
+			System.out.println("   ID: " + preference.getId());
+			System.out.println("   Init Point: " + preference.getInitPoint());
 			System.out.println("🔵 ══════════════════════════════════════\n");
 
 			return ResponseEntity.ok(new HashMap<String, String>() {
 				{
-					put("initPoint", preapproval.getInitPoint());
+					put("initPoint", preference.getInitPoint());
+					put("preferenceId", preference.getId());
 				}
 			});
 
 		} catch (MPApiException e) {
 			System.out.println("\n🔴 ══════════════════════════════════════");
-        System.out.println("   ERROR MERCADOPAGO API");
-        System.out.println("   Message: " + e.getMessage());
-        System.out.println("🔴 ══════════════════════════════════════\n");
-        
-        return ResponseEntity.status(500).body(Map.of(
-            "error", "MercadoPago API Error",
-            "message", e.getMessage()
-        ));
+			System.out.println("   ERROR MERCADOPAGO API");
+			System.out.println("   Message: " + e.getMessage());
+			System.out.println("🔴 ══════════════════════════════════════\n");
+
+			return ResponseEntity.status(500).body(Map.of("error", "MercadoPago API Error", "message", e.getMessage()));
 
 		} catch (Exception e) {
 			System.out.println("\n🔴 ══════════════════════════════════════");
@@ -119,54 +131,153 @@ public class MercadoPagoController {
 		}
 	}
 
-	// ── 2. NUEVO — MP llama esto automáticamente cuando alguien paga ──
+// ── 2. WEBHOOK ──
 	@PostMapping("/webhook")
 	public ResponseEntity<?> webhook(@RequestBody Map<String, Object> body) {
 		try {
 			String type = (String) body.get("type");
+			String action = (String) body.get("action");
+			Map<?, ?> data = (Map<?, ?>) body.get("data");
 
-			// Suscripción creada/renovada
-			if ("subscription_authorized_payment".equals(type)) {
-				Map<?, ?> data = (Map<?, ?>) body.get("data");
-				String preapprovalId = (String) data.get("id");
+			System.out.println("\n🔔 WEBHOOK RECIBIDO");
+			System.out.println("   Type: " + type);
+			System.out.println("   Action: " + action);
 
-				PreapprovalClient client = new PreapprovalClient();
-				Preapproval preapproval = client.get(preapprovalId);
+			if ("payment".equals(type) && data != null && data.containsKey("id")) {
+				// ✅ FIX 1: el id del webhook llega como String o Number, convertir a Long
+				Object idObj = data.get("id");
+				Long paymentId = idObj instanceof Number ? ((Number) idObj).longValue()
+						: Long.parseLong(idObj.toString());
 
-				if ("authorized".equals(preapproval.getStatus())) {
-					String externalRef = preapproval.getExternalReference();
-					String[] parts = externalRef.split("\\|");
-					String firebaseUid = parts[0];
-					String planNombre = parts[1];
+				System.out.println("   Payment ID: " + paymentId);
+				procesarPago(paymentId);
+			}
 
-					User user = userRepository.findByFirebaseUid(firebaseUid)
-							.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-					Plan plan = planRepository.findByNombre(planNombre)
-							.orElseThrow(() -> new RuntimeException("Plan no encontrado"));
+			return ResponseEntity.ok().build();
 
-					LocalDateTime vencimiento = planNombre.equals("PREMIUM_ANUAL") ? LocalDateTime.now().plusYears(1)
-							: LocalDateTime.now().plusMonths(1);
+		} catch (Exception e) {
+			System.out.println("❌ Error webhook: " + e.getMessage());
+			e.printStackTrace(System.out);
+			return ResponseEntity.ok().build();
+		}
+	}
 
-					user.setPlan(plan);
-					userRepository.save(user);
+// ── 3. PROCESAR PAGO ──
+	private void procesarPago(Long paymentId) throws MPApiException, MPException {
+		PaymentClient client = new PaymentClient();
+		Payment payment = client.get(paymentId);
 
-					suscripcionRepository.cancelarActivas(user.getId());
+		System.out.println("   💳 Status: " + payment.getStatus());
+		System.out.println("   External Ref: " + payment.getExternalReference());
 
-					Suscripcion sus = new Suscripcion();
-					sus.setUser(user);
-					sus.setPlan(plan);
+		if ("approved".equals(payment.getStatus())) {
+			String externalRef = payment.getExternalReference();
+			String[] parts = externalRef.split("\\|");
+			String firebaseUid = parts[0];
+			String planNombre = parts[1];
+			String tenantTipo = parts.length > 2 ? parts[2] : "DISTRIBUIDOR";
+
+			User user = userRepository.findByFirebaseUid(firebaseUid)
+					.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+			Plan plan = planRepository.findByNombre(planNombre)
+					.orElseThrow(() -> new RuntimeException("Plan no encontrado"));
+
+			LocalDateTime vencimiento = planNombre.equals("PREMIUM_ANUAL") ? LocalDateTime.now().plusYears(1)
+					: LocalDateTime.now().plusMonths(1);
+
+			// ✅ FIX 2: en SDK 3.1.0 el payment_method_id se obtiene así
+			String paymentMethodId = null;
+			if (payment.getPaymentMethodId() != null) {
+				paymentMethodId = payment.getPaymentMethodId();
+				System.out.println("      Payment Method ID: " + paymentMethodId);
+			} else {
+				System.out.println("      ⚠️  No se pudo obtener payment_method_id");
+			}
+
+			user.setPlan(plan);
+			userRepository.save(user);
+
+			suscripcionRepository.cancelarActivas(user.getId());
+
+			Suscripcion nuevaSuscripcion = new Suscripcion();
+			nuevaSuscripcion.setUser(user);
+			nuevaSuscripcion.setPlan(plan);
+			nuevaSuscripcion.setEstado("ACTIVA");
+			nuevaSuscripcion.setInicio(LocalDateTime.now());
+			nuevaSuscripcion.setVencimiento(vencimiento);
+			nuevaSuscripcion.setMetodoPago("MERCADOPAGO");
+			// ✅ FIX 3: convertir Long a String para setTokenPago
+			nuevaSuscripcion.setTokenPago(String.valueOf(paymentId));
+			nuevaSuscripcion.setPaymentMethodId(paymentMethodId);
+			nuevaSuscripcion.setProximaRenovacion(vencimiento);
+
+			suscripcionRepository.save(nuevaSuscripcion);
+			System.out.println("      ✅ SUSCRIPCIÓN ACTIVADA EXITOSAMENTE\n");
+
+		} else {
+			System.out.println("   ❌ Pago " + payment.getStatus());
+		}
+	}
+
+// ── 4. COBRO AUTOMÁTICO ──
+	public void cobrarRenovacionesVencidas() throws MPApiException {
+		List<Suscripcion> suscripcionesAVencer = suscripcionRepository
+				.findSuscripcionesParaRenovar(LocalDateTime.now().plusHours(1));
+
+		for (Suscripcion sus : suscripcionesAVencer) {
+			try {
+				if (sus.getPaymentMethodId() == null || sus.getPaymentMethodId().isEmpty()) {
+					sus.setEstado("PENDIENTE_PAGO");
+					suscripcionRepository.save(sus);
+					continue;
+				}
+
+				List<PlanPricing> precios = planPricingRepository.findByPlanAndTenant(sus.getPlan().getNombre(),
+						"DISTRIBUIDOR");
+
+				if (precios.isEmpty())
+					continue;
+
+				BigDecimal montoActual = precios.get(0).getMonto();
+
+				PaymentClient paymentClient = new PaymentClient();
+
+				// ✅ FIX 4: builder correcto para SDK 3.1.0
+				// .amount() NO existe → usar .transactionAmount()
+				// .payerEmail() NO existe → usar .payer() con PaymentPayerRequest
+				com.mercadopago.client.payment.PaymentPayerRequest payer = com.mercadopago.client.payment.PaymentPayerRequest
+						.builder().email(sus.getUser().getEmail()).build();
+
+				com.mercadopago.client.payment.PaymentCreateRequest paymentRequest = com.mercadopago.client.payment.PaymentCreateRequest
+						.builder().transactionAmount(montoActual) // ✅ nombre correcto
+						.paymentMethodId(sus.getPaymentMethodId()).payer(payer) // ✅ payer anidado
+						.description("Renovación - " + sus.getPlan().getNombre())
+						.externalReference(
+								sus.getUser().getFirebaseUid() + "|" + sus.getPlan().getNombre() + "|RENOVACION")
+						.build();
+
+				Payment paymentRenovacion = paymentClient.create(paymentRequest);
+
+				if ("approved".equals(paymentRenovacion.getStatus())) {
+					LocalDateTime nuevoVencimiento = sus.getPlan().getNombre().equals("PREMIUM_ANUAL")
+							? sus.getVencimiento().plusYears(1)
+							: sus.getVencimiento().plusMonths(1);
+
+					sus.setVencimiento(nuevoVencimiento);
+					sus.setProximaRenovacion(nuevoVencimiento);
+					// ✅ FIX 5: convertir Long a String
+					sus.setTokenPago(String.valueOf(paymentRenovacion.getId()));
 					sus.setEstado("ACTIVA");
-					sus.setInicio(LocalDateTime.now());
-					sus.setVencimiento(vencimiento);
-					sus.setMetodoPago("MERCADOPAGO");
-					sus.setTokenPago(preapprovalId);
+					suscripcionRepository.save(sus);
+				} else {
+					sus.setEstado("PENDIENTE_PAGO");
 					suscripcionRepository.save(sus);
 				}
+
+			} catch (Exception e) {
+				System.out.println("      ❌ Error renovando: " + e.getMessage());
 			}
-		} catch (Exception e) {
-			System.out.println("Error en webhook: " + e.getMessage());
 		}
-		return ResponseEntity.ok().build();
 	}
 
 }

@@ -44,4 +44,10 @@ public class Suscripcion {
 
     @Column(name = "token_pago")
     private String tokenPago;
+    
+    @Column(name = "payment_method_id",  length = 255)
+    private String paymentMethodId;    // Token de la tarjeta
+    
+    @Column(name = "proxima_renovacion")
+    private LocalDateTime proximaRenovacion; // Cuándo cobrar de nuevo
 }
