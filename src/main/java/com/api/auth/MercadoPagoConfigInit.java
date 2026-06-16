@@ -43,7 +43,7 @@ public class MercadoPagoConfigInit {
         
         String ambiente = accessToken.startsWith("TEST_") 
             ? "🔴 SANDBOX (solo tarjetas de prueba)"
-            : accessToken.startsWith("APP_USR_")
+            : accessToken.startsWith("APP_USR-")
             ? "🟢 PRODUCCIÓN (tarjetas reales)"
             : "❓ DESCONOCIDO";
             
