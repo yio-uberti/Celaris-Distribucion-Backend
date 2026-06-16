@@ -195,7 +195,9 @@ public class VentaServicio {
 					.orElseThrow(() -> new RuntimeException("Tipo de pago no encontrado"));
 			return VentaTipoPago.builder().venta(venta).tipoPago(tipoPago).monto(p.getMonto()).build();
 		}).toList());
-		venta.setPagos(pagos);
+		venta.getPagos().clear();
+	    venta.getPagos().addAll(pagos);
+		
 		venta.setEstado("ENTREGADA");
 
 		// Calcular deuda
