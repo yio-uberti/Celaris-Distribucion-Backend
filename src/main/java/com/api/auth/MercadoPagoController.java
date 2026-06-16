@@ -67,21 +67,17 @@ public class MercadoPagoController {
 			// El primero de la lista es el más reciente (ORDER BY createdAt DESC)
 			PlanPricing precioActual = precios.get(0);
 			BigDecimal montoFinal = precioActual.getMonto();
-			System.out.println("   Monto (desde BD): $" + montoFinal);
+			System.out.println("   Monto (desde BD): $" + montoFinal + " ARS");
 
 			boolean esAnual = req.getPlan().equals("PREMIUM_ANUAL");
-			User user = userRepository.findByFirebaseUid(firebaseUid).orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+			User user = userRepository.findByFirebaseUid(firebaseUid)
+					.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
 			PreapprovalCreateRequest preapprovalRequest = PreapprovalCreateRequest.builder()
 					.reason(esAnual ? "Celaris - Plan Premium Anual" : "Celaris - Plan Premium Mensual")
 					.externalReference(firebaseUid + "|" + req.getPlan()).payerEmail(user.getEmail())
-					.autoRecurring(PreApprovalAutoRecurringCreateRequest
-							.builder()
-							.frequency(esAnual ? 12 : 1)
-							.frequencyType("months")
-							.transactionAmount(montoFinal)
-							.currencyId("ARS")
-							.build())
+					.autoRecurring(PreApprovalAutoRecurringCreateRequest.builder().frequency(esAnual ? 12 : 1)
+							.frequencyType("months").transactionAmount(montoFinal).currencyId("ARS").build())
 					.backUrl("https://celaris-distribucion-backend.onrender.com").build();
 
 			System.out.println("📤 Enviando a MercadoPago...");
@@ -89,6 +85,11 @@ public class MercadoPagoController {
 			Preapproval preapproval = client.create(preapprovalRequest);
 
 			System.out.println("✅ Preapproval creado: " + preapproval.getId());
+			System.out.println("   ID: " + preapproval.getId());
+			System.out.println("   Status: " + preapproval.getStatus());
+			System.out.println("   Init Point: " + preapproval.getInitPoint());
+			System.out.println("🔵 ══════════════════════════════════════\n");
+
 			return ResponseEntity.ok(new HashMap<String, String>() {
 				{
 					put("initPoint", preapproval.getInitPoint());
@@ -96,70 +97,25 @@ public class MercadoPagoController {
 			});
 
 		} catch (MPApiException e) {
-			System.out.println("\n❌ ERROR MP API - DETALLES COMPLETOS:");
-			System.out.println("═══════════════════════════════════");
-			System.out.println("Mensaje: " + e.getMessage());
-
-			// Sacar el status code
-			try {
-				var responseField = e.getClass().getDeclaredField("apiResponse");
-				responseField.setAccessible(true);
-				Object apiResponse = responseField.get(e);
-
-				System.out.println("\n📋 MPResponse encontrado: " + apiResponse.getClass().getName());
-
-				// Intentar acceder al status code
-				try {
-					var statusCodeMethod = apiResponse.getClass().getMethod("getStatusCode");
-					int statusCode = (Integer) statusCodeMethod.invoke(apiResponse);
-					System.out.println("Status Code: " + statusCode);
-				} catch (Exception ex) {
-					System.out.println("No se pudo obtener status code");
-				}
-
-				// Intentar acceder al content/body
-				try {
-					var contentField = apiResponse.getClass().getDeclaredField("content");
-					contentField.setAccessible(true);
-					String content = (String) contentField.get(apiResponse);
-					System.out.println("\n📄 Response Body:");
-					System.out.println(content);
-				} catch (Exception ex) {
-					System.out.println("No se pudo obtener content");
-				}
-
-				// Intentar acceder a la respuesta como Map
-				try {
-					var bodyField = apiResponse.getClass().getDeclaredField("body");
-					bodyField.setAccessible(true);
-					Object body = bodyField.get(apiResponse);
-					System.out.println("\n📦 Response Body object: " + body);
-				} catch (Exception ex) {
-					System.out.println("No se pudo obtener body");
-				}
-
-			} catch (Exception ex) {
-				System.out.println("Error extrayendo apiResponse: " + ex.getMessage());
-			}
-
-			System.out.println("═══════════════════════════════════\n");
-
-			return ResponseEntity.status(500).body(new java.util.HashMap<String, Object>() {
-				{
-					put("error", "MercadoPago API Error");
-					put("message", e.getMessage());
-				}
-			});
+			System.out.println("\n🔴 ══════════════════════════════════════");
+        System.out.println("   ERROR MERCADOPAGO API");
+        System.out.println("   Message: " + e.getMessage());
+        System.out.println("🔴 ══════════════════════════════════════\n");
+        
+        return ResponseEntity.status(500).body(Map.of(
+            "error", "MercadoPago API Error",
+            "message", e.getMessage()
+        ));
 
 		} catch (Exception e) {
-			System.out.println("❌ ERROR GENÉRICO:");
+			System.out.println("\n🔴 ══════════════════════════════════════");
+			System.out.println("   ERROR GENERAL");
+			System.out.println("   " + e.getClass().getSimpleName() + ": " + e.getMessage());
 			e.printStackTrace(System.out);
-			return ResponseEntity.status(500).body(new java.util.HashMap<String, Object>() {
-				{
-					put("error", e.getClass().getSimpleName());
-					put("message", e.getMessage());
-				}
-			});
+			System.out.println("🔴 ══════════════════════════════════════\n");
+
+			return ResponseEntity.status(500)
+					.body(Map.of("error", e.getClass().getSimpleName(), "message", e.getMessage()));
 		}
 	}
 
