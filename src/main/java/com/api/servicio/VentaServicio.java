@@ -125,6 +125,7 @@ public class VentaServicio {
 		venta.setFechaEntrega(fechaEntrega != null ? fechaEntrega : hoy);
 		venta.setEstado(esReservada ? "RESERVADA" : "REGISTRADA");
 		venta.setTenantId(tenantId);
+		venta.setDescuento(req.getDescuento() != null ? req.getDescuento() : 0);
 
 		// Después de crear la venta base
 		String uid = (String) request.getAttribute("firebaseUid");
@@ -135,6 +136,7 @@ public class VentaServicio {
 		// Armar detalles y calcular total
 		List<DetalleVenta> detalles = new ArrayList<>();
 		BigDecimal total = BigDecimal.ZERO;
+		
 		for (VentaRequest.DetalleRequest d : req.getDetalles()) {
 			productos producto = productoRepository.findByIdProdAndTenantId(d.getIdProducto(), tenantId)
 					.orElseThrow(() -> new RuntimeException("Producto no encontrado"));
@@ -154,6 +156,12 @@ public class VentaServicio {
 			total = total.add(subtotal);
 		}
 
+		if (req.getDescuento() != null && req.getDescuento() > 0) {
+	        BigDecimal porcentajeDescuento = BigDecimal.valueOf(req.getDescuento());
+	        BigDecimal montoDescuento = total.multiply(porcentajeDescuento).divide(BigDecimal.valueOf(100));
+	        total = total.subtract(montoDescuento);
+	    }
+		
 		venta.setTotal(total);
 		venta.setDetalles(detalles);
 
@@ -245,6 +253,13 @@ public class VentaServicio {
 	        total = total.add(subtotal);
 	    }
 
+	 // Si hay descuento, recalcular con descuento
+	    if (venta.getDescuento() != null && venta.getDescuento() > 0) {
+	        BigDecimal porcentajeDescuento = BigDecimal.valueOf(venta.getDescuento());
+	        BigDecimal montoDescuento = total.multiply(porcentajeDescuento).divide(BigDecimal.valueOf(100));
+	        total = total.subtract(montoDescuento);
+	    }
+	    
 	    venta.getDetalles().clear();
 	    venta.getDetalles().addAll(nuevosDetalles);
 	    venta.setTotal(total);

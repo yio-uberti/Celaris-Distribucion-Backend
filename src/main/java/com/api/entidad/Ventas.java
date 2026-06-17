@@ -66,4 +66,7 @@ public class Ventas {
 	@JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "tenant", "plan", "suscripciones"})
 	private User registradoPor;
 	
+	@Column
+	private Integer descuento;
+	
 }
