@@ -94,46 +94,44 @@ public class AuthService {
 	@Transactional
 	public void completarFormulario(HttpServletRequest request, FormularioRequest formulario) {
 		String firebaseUid = (String) request.getAttribute("firebaseUid");
-
-		if (firebaseUid == null)
-			return;
-
-		Optional<User> userOptional = userRepository.findByFirebaseUid(firebaseUid);
-		if (userOptional.isEmpty()) {
-			throw new RuntimeException("Usuario no encontrado");
-		}
-
-		User userData = userOptional.get();
-
-		userData.setNombre(formulario.getNombre());
-		userData.setApellido(formulario.getApellido());
-		userData.setEdad(formulario.getEdad());
-		userData.setFrecuenciaDeudores(formulario.getFrecuenciaDeudores());
-
-		// Datos del tenant según tipo
-		Tenant tenant = userData.getTenant();
-
-		if ("EMPRESA".equals(tenant.getTipo())) {
-//			tenant.setTipo("EMPRESA");
-			tenant.setNombreFantasia(formulario.getNombreFantasia());
-			tenant.setRazonSocial(formulario.getRazonSocial());
-			tenant.setCuit(formulario.getCuit());
-			tenant.setTelefono(formulario.getTelefono());
-
-		} else if ("AUTONOMO".equals(tenant.getTipo())) {
-			userData.setRubro(formulario.getRubro());
-
-			// Guardar el rubro si no existe
+	    if (firebaseUid == null)
+	        return;
+	    
+	    Optional<User> userOptional = userRepository.findByFirebaseUid(firebaseUid);
+	    if (userOptional.isEmpty()) {
+	        throw new RuntimeException("Usuario no encontrado");
+	    }
+	    
+	    User userData = userOptional.get();
+	    userData.setNombre(formulario.getNombre());
+	    userData.setApellido(formulario.getApellido());
+	    userData.setEdad(formulario.getEdad());
+	    userData.setFrecuenciaDeudores(formulario.getFrecuenciaDeudores());
+	    
+	    Tenant tenant = userData.getTenant();
+	    
+	    // 🔥 ASIGNAR EL TIPO DESDE EL FORMULARIO
+	    tenant.setTipo(formulario.getTipo());
+	    tenant.setNombre(formulario.getNombre()); // Conectar el nombre del usuario al tenant
+	    
+	    if ("EMPRESA".equals(formulario.getTipo())) {
+	        tenant.setNombreFantasia(formulario.getNombreFantasia());
+	        tenant.setRazonSocial(formulario.getRazonSocial());
+	        tenant.setCuit(formulario.getCuit());
+	        tenant.setTelefono(formulario.getTelefono());
+	    } else if ("AUTONOMO".equals(formulario.getTipo())) {
+	        userData.setRubro(formulario.getRubro());
+	        
+	        // Guardar el rubro si no existe
 	        if (rubroRepository.findByNombre(formulario.getRubro()).isEmpty()) {
 	            Rubro r = new Rubro();
 	            r.setNombre(formulario.getRubro());
 	            rubroRepository.save(r);
 	        }
 	        asignarProductosCatalogo(userData);
-
-		}
+	    }
+		
 		// 🔥 GUARDAR ORIGEN DE REFERENCIA
-		// 🔥 UPSERT - Si existe, actualiza; si no, crea
 	    if (formulario.getOrigenReferencia() != null) {
 	        Optional<OrigenReferencia> origenExistente = origenReferenciaRepository
 	            .findByUsuarioId(userData.getId());
