@@ -24,4 +24,6 @@ public class FormularioRequest {
     private String razonSocial;
     private String cuit;
     private String telefono;
+    
+    private String origenReferencia;
 }

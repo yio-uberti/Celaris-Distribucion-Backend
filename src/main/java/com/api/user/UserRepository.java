@@ -20,4 +20,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	List<User> findByTenantIdAndIdNot(Long tenantId, Long id);
 	
 	long countByTenantIdAndRol_NombreNot(Long tenantId, String nombre);
+
+	Optional<User> findByTenantId(Long id);
 }

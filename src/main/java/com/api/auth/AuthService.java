@@ -6,9 +6,12 @@ import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.api.entidad.ProductoCatalogo;
 import com.api.entidad.productos;
+import com.api.referencia.OrigenReferencia;
+import com.api.referencia.OrigenReferenciaRepository;
 import com.api.repositorio.ProductoCatalogoRepository;
 import com.api.repositorio.repoProducto;
 import com.api.tenant.Tenant;
@@ -40,6 +43,8 @@ public class AuthService {
 	private RolRepositorio rolRepository;
 	@Autowired
 	private InvitacionRepository invitacionRepository;
+	@Autowired
+	private OrigenReferenciaRepository origenReferenciaRepository;
 
 	// Exponé getTenantId como público
 	public Long getTenantIdPublic(HttpServletRequest request) {
@@ -86,6 +91,7 @@ public class AuthService {
 		return true;
 	}
 
+	@Transactional
 	public void completarFormulario(HttpServletRequest request, FormularioRequest formulario) {
 		String firebaseUid = (String) request.getAttribute("firebaseUid");
 
@@ -126,6 +132,24 @@ public class AuthService {
 	        asignarProductosCatalogo(userData);
 
 		}
+		// 🔥 GUARDAR ORIGEN DE REFERENCIA
+	    if (formulario.getOrigenReferencia() != null) {
+	        OrigenReferencia origen = OrigenReferencia.builder()
+	            .usuarioId(userData.getId())
+	            .origen(
+	                formulario.getOrigenReferencia().equals("otro") 
+	                    ? "otro" 
+	                    : formulario.getOrigenReferencia()
+	            )
+	            .origenPersonalizado(
+	                formulario.getOrigenReferencia().equals("otro")
+	                    ? formulario.getOrigenReferencia()
+	                    : null
+	            )
+	            .build();
+	        
+	        origenReferenciaRepository.save(origen);
+	    }
 
 		tenantRepository.save(tenant);
 		userRepository.save(userData);
