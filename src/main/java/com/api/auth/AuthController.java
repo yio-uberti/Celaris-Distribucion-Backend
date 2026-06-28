@@ -1,7 +1,6 @@
 package com.api.auth;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,26 +65,28 @@ public class AuthController {
 
 //	Metodo para traer datos del usuario
 	@GetMapping("/me")
-	public ResponseEntity<?> me(HttpServletRequest request) {
+	public ResponseEntity<UserDTO> me(HttpServletRequest request) {
 	    String firebaseUid = (String) request.getAttribute("firebaseUid");
 	    User user = userRepository.findByFirebaseUid(firebaseUid)
 	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
 	    Tenant tenant = user.getTenant();
 
-	    Map<String, Object> response = new HashMap<>();
-	    response.put("id", user.getId());
-	    response.put("nombre", user.getNombre());
-	    response.put("apellido", user.getApellido());
-	    response.put("edad", user.getEdad());
-	    response.put("email", user.getEmail());
-	    response.put("rubro", user.getRubro());
-	    response.put("rol", user.getRol().getNombre());
-	    response.put("tenantId", tenant.getId());
-	    response.put("tenantTipo", tenant.getTipo());           // AUTONOMO / EMPRESA
-	    response.put("tenantNombre", tenant.getNombre());       // nombre del negocio/empresa
-	    response.put("permisos", user.getRol().getPermisos()
-	            .stream().map(p -> p.getClave()).toList());
+	    UserDTO response = new UserDTO();
+	    response.setId(user.getId());
+	    response.setNombre(user.getNombre());
+	    response.setApellido(user.getApellido());
+	    response.setEdad(user.getEdad());
+	    response.setEmail(user.getEmail());
+	    response.setRubro(user.getRubro());
+	    response.setRol(user.getRol().getNombre());
+	    response.setTenantId(tenant.getId());
+	    response.setTenantTipo(tenant.getTipo());
+	    response.setTenantNombre(tenant.getNombre());
+	    response.setNombreFantasia(tenant.getNombreFantasia());
+	    response.setRazonSocial(tenant.getRazonSocial());
+	    response.setCuit(tenant.getCuit());
+	    response.setPermisos(user.getRol().getPermisos().stream().map(p -> p.getClave()).toList());
 
 	    return ResponseEntity.ok(response);
 	}
