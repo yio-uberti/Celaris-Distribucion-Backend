@@ -102,23 +102,19 @@ public class AuthService {
 		userData.setNombre(formulario.getNombre());
 		userData.setApellido(formulario.getApellido());
 		userData.setEdad(formulario.getEdad());
-		userData.setRubro(formulario.getRubro());
 		userData.setFrecuenciaDeudores(formulario.getFrecuenciaDeudores());
 
 		// Datos del tenant según tipo
 		Tenant tenant = userData.getTenant();
 
-		if ("EMPRESA".equals(formulario.getTipo())) {
-			tenant.setTipo("EMPRESA");
-			tenant.setNombre(formulario.getNombre()); // Usamos el nombre del usuario para conectar el tennant
+		if ("EMPRESA".equals(tenant.getTipo())) {
+//			tenant.setTipo("EMPRESA");
 			tenant.setNombreFantasia(formulario.getNombreFantasia());
 			tenant.setRazonSocial(formulario.getRazonSocial());
 			tenant.setCuit(formulario.getCuit());
 			tenant.setTelefono(formulario.getTelefono());
 
-		} else {
-			tenant.setTipo("AUTONOMO");
-			tenant.setNombreFantasia(formulario.getNombre());
+		} else if ("AUTONOMO".equals(tenant.getTipo())) {
 			userData.setRubro(formulario.getRubro());
 
 			// Guardar el rubro si no existe
