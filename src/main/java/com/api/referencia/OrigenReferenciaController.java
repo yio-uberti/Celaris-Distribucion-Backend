@@ -30,7 +30,7 @@ public class OrigenReferenciaController {
 
     /**
      * 🔥 Obtener estadísticas de origen de referencia
-     * Solo accesible para OWNER/ADMIN
+     * Solo accesible para Giorgio
      */
     @GetMapping("/reportes/origenes")
     public ResponseEntity<?> reporteOrigenes(HttpServletRequest request) {
