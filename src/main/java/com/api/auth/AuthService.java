@@ -133,22 +133,43 @@ public class AuthService {
 
 		}
 		// 🔥 GUARDAR ORIGEN DE REFERENCIA
+		// 🔥 UPSERT - Si existe, actualiza; si no, crea
 	    if (formulario.getOrigenReferencia() != null) {
-	        OrigenReferencia origen = OrigenReferencia.builder()
-	            .usuarioId(userData.getId())
-	            .origen(
+	        Optional<OrigenReferencia> origenExistente = origenReferenciaRepository
+	            .findByUsuarioId(userData.getId());
+
+	        if (origenExistente.isPresent()) {
+	            // ✅ Actualizar existente
+	            OrigenReferencia origen = origenExistente.get();
+	            origen.setOrigen(
 	                formulario.getOrigenReferencia().equals("otro") 
 	                    ? "otro" 
 	                    : formulario.getOrigenReferencia()
-	            )
-	            .origenPersonalizado(
+	            );
+	            origen.setOrigenPersonalizado(
 	                formulario.getOrigenReferencia().equals("otro")
 	                    ? formulario.getOrigenReferencia()
 	                    : null
-	            )
-	            .build();
-	        
-	        origenReferenciaRepository.save(origen);
+	            );
+	            origenReferenciaRepository.save(origen);
+	        } else {
+	            // ✅ Crear nuevo
+	            OrigenReferencia origen = OrigenReferencia.builder()
+	                .usuarioId(userData.getId())
+	                .origen(
+	                    formulario.getOrigenReferencia().equals("otro") 
+	                        ? "otro" 
+	                        : formulario.getOrigenReferencia()
+	                )
+	                .origenPersonalizado(
+	                    formulario.getOrigenReferencia().equals("otro")
+	                        ? formulario.getOrigenReferencia()
+	                        : null
+	                )
+	                .build();
+	            
+	            origenReferenciaRepository.save(origen);
+	        }
 	    }
 
 		tenantRepository.save(tenant);
