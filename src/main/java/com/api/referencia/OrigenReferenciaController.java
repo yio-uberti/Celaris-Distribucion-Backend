@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.api.tenant.Tenant;
 import com.api.user.User;
 import com.api.user.UserRepository;
 
@@ -47,17 +45,16 @@ public class OrigenReferenciaController {
                     .body(Map.of("error", "Solo propietarios pueden ver este reporte"));
             }
 
-            Tenant tenant = user.getTenant();
+//            Tenant tenant = user.getTenant();
             
             // Obtener todos los usuarios del tenant
-            List<Long> usuariosIds = userRepository.findByTenantId(tenant.getId())
-                .stream()
-                .map(User::getId)
-                .collect(Collectors.toList());
+//            List<Long> usuariosIds = userRepository.findByTenantId(tenant.getId())
+//                .stream()
+//                .map(User::getId)
+//                .collect(Collectors.toList());
 
             // Obtener orígenes de referencia
-            List<OrigenReferencia> origenes = origenReferenciaRepository
-                .findByUsuarioIdIn(usuariosIds);
+            List<OrigenReferencia> origenes = origenReferenciaRepository.findAll();
 
             // 🔥 Calcular estadísticas
             Map<String, Integer> estadisticas = new HashMap<>();
