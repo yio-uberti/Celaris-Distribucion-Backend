@@ -39,7 +39,7 @@ public class EmpleadoController {
     }
     
  // En el controlador
-    @PatchMapping("/empleados/{id}/revocar")
+    @PatchMapping("/{id}/revocar")
     public ResponseEntity<?> revocar(@PathVariable Long id, HttpServletRequest request) {
         empleadoService.revocarEmpleado(request, id);
         return ResponseEntity.ok().build();
