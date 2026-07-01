@@ -76,4 +76,10 @@ public class User {
 	@Column(name = "fecha_alta")
 	private LocalDateTime fechaAlta;
 
+	@Column(name = "fecha_registro")
+	private LocalDateTime fechaRegistro;
+
+	@Column(name = "encuesta_completada")
+	private Boolean encuestaCompletada = false;
+
 }

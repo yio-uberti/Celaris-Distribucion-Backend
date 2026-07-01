@@ -16,20 +16,7 @@ import jakarta.annotation.PostConstruct;
 @Configuration
 public class FirebaseConfig {
 	
-//	 @PostConstruct
-//	    public void init() throws IOException {
-//	       InputStream serviceAccount = 
-//	    		   getClass().getClassLoader().getResourceAsStream("celarisdistribucion-firebase-adminsdk-fbsvc-5eeb28dd97.json");
-//
-//	        FirebaseOptions options = FirebaseOptions.builder()
-//	            .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-//	            .build();
-//
-//	        if (FirebaseApp.getApps().isEmpty()) {
-//	            FirebaseApp.initializeApp(options);
-//	        }
-//	    }
-	 
+
 //	 PRODUCCION EN EL SERVIDOR DE RENDER
 	 @PostConstruct
 	 public void init() throws IOException {
