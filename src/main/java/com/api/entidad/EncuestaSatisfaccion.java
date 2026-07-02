@@ -28,6 +28,7 @@ public class EncuestaSatisfaccion {
     private Long userId;
 
     private String satisfaccion;
+    @Column(name = "facilidad_uso")
     private String facilidadUso;
 
     @Column(name = "comentario_mejora", columnDefinition = "TEXT")
