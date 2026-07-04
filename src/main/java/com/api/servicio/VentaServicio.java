@@ -48,7 +48,8 @@ public class VentaServicio {
 	
 	private final PlanLimiteService planLimiteService; // agregar al constructor/inyección
 
-	private static final int LIMITE_VENTAS_FREE = 1500;
+	private static final int LIMITE_VENTAS_FREE_MENSUAL = 1500;
+	private static final ZoneId ZONA_AR = ZoneId.of("America/Argentina/Buenos_Aires");
 	
 	// Exponé getTenantId como público
 	public Long getTenantIdPublic(HttpServletRequest request) {
@@ -115,13 +116,20 @@ public class VentaServicio {
 	public Ventas create(HttpServletRequest request, VentaRequest req) {
 		Long tenantId = getTenantId(request);
 		
-		 // 🔒 Límite de plan Free — 1500 ventas registradas, autónomos y empresas por igual
+		// 🔒 Límite de plan Free — 1500 ventas POR MES, no acumuladas de por vida
 	    if (!planLimiteService.tenantEsPremium(tenantId)) {
-	        long totalActual = ventaRepository.countByTenantId(tenantId);
-	        if (totalActual >= LIMITE_VENTAS_FREE) {
+	        LocalDate hoy = LocalDate.now(ZONA_AR);
+	        LocalDateTime inicioMes = hoy.withDayOfMonth(1).atStartOfDay();
+	        LocalDateTime inicioMesSiguiente = inicioMes.plusMonths(1);
+
+	        long totalEsteMes = ventaRepository.countByTenantIdAndFecha_horaBetween(
+	            tenantId, inicioMes, inicioMesSiguiente
+	        );
+
+	        if (totalEsteMes >= LIMITE_VENTAS_FREE_MENSUAL) {
 	            throw new LimitePlanException(
-	                "Alcanzaste el límite de " + LIMITE_VENTAS_FREE +
-	                " ventas registradas en tu plan Free. Actualizá a Premium para seguir vendiendo."
+	                "Alcanzaste el límite de " + LIMITE_VENTAS_FREE_MENSUAL +
+	                " ventas de este mes en tu plan Free. Actualizá a Premium para seguir vendiendo."
 	            );
 	        }
 	    }
