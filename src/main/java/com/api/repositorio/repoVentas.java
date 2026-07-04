@@ -59,5 +59,7 @@ public interface repoVentas extends CrudRepository<Ventas, Integer> {
 	List<Ventas> findByTenantIdAndFecha_horaBetween(@Param("tenantId") Long tenantId,
 			@Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
 	
-	long countByTenantIdAndFecha_horaBetween(Long tenantId, LocalDateTime desde, LocalDateTime hasta);
+	@Query("SELECT COUNT(v) FROM Ventas v WHERE v.tenantId = :tenantId AND v.fecha_hora BETWEEN :fechaInicio AND :fechaFin")
+	long countByTenantIdAndFechaHoraBetween(@Param("tenantId") Long tenantId,
+	        @Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
 }
