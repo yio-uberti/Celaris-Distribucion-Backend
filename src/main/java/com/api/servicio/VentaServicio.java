@@ -27,8 +27,10 @@ import com.api.user.UserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class VentaServicio {
 
 	@Autowired
@@ -43,6 +45,10 @@ public class VentaServicio {
 	private UserRepository userRepository;
 	@Autowired
 	private repoClientes clienteRepository;
+	
+	private final PlanLimiteService planLimiteService; // agregar al constructor/inyección
+
+	private static final int LIMITE_VENTAS_FREE = 1500;
 	
 	// Exponé getTenantId como público
 	public Long getTenantIdPublic(HttpServletRequest request) {
@@ -108,6 +114,18 @@ public class VentaServicio {
 	@Transactional
 	public Ventas create(HttpServletRequest request, VentaRequest req) {
 		Long tenantId = getTenantId(request);
+		
+		 // 🔒 Límite de plan Free — 1500 ventas registradas, autónomos y empresas por igual
+	    if (!planLimiteService.tenantEsPremium(tenantId)) {
+	        long totalActual = ventaRepository.countByTenantId(tenantId);
+	        if (totalActual >= LIMITE_VENTAS_FREE) {
+	            throw new LimitePlanException(
+	                "Alcanzaste el límite de " + LIMITE_VENTAS_FREE +
+	                " ventas registradas en tu plan Free. Actualizá a Premium para seguir vendiendo."
+	            );
+	        }
+	    }
+		
 		clientes cliente = clienteService.findOrCreate(req.getNombreCliente(), tenantId);
 
 		LocalDate fechaEntrega = req.getFechaEntrega();

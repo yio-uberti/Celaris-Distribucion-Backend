@@ -2,6 +2,7 @@ package com.api.controlador;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.api.entidad.Ventas;
 import com.api.repositorio.repoVentas;
+import com.api.servicio.LimitePlanException;
 import com.api.servicio.VentaServicio;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -85,8 +87,13 @@ public class conVentas {
 
 //	Metodo para registrar una venta 
 	@PostMapping
-	public ResponseEntity<Ventas> create(HttpServletRequest request, @RequestBody VentaRequest ventaRequest) {
-		return ResponseEntity.status(201).body(ventaService.create(request, ventaRequest));
+	public ResponseEntity<?> create(HttpServletRequest request, @RequestBody VentaRequest ventaRequest) {
+	    try {
+	        Ventas creada = ventaService.create(request, ventaRequest);
+	        return ResponseEntity.status(201).body(creada);
+	    } catch (LimitePlanException e) {
+	        return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+	    }
 	}
 	
 //	Metodo para editar una venta 

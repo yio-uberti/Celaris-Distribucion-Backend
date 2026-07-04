@@ -1,6 +1,7 @@
 package com.api.controlador;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.api.entidad.productos;
+import com.api.servicio.LimitePlanException;
 import com.api.servicio.ProductoServicio;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,8 +32,13 @@ public class conProductos {
     }
 
     @PostMapping
-    public ResponseEntity<productos> create(HttpServletRequest request, @RequestBody productos producto) {
-        return ResponseEntity.status(201).body(productoService.create(request, producto));
+    public ResponseEntity<?> create(HttpServletRequest request, @RequestBody productos producto) {
+    	try {
+            productos creado = productoService.create(request, producto);
+            return ResponseEntity.status(201).body(creado);
+        } catch (LimitePlanException e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PutMapping("/{nombre}")

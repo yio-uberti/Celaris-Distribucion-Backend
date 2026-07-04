@@ -17,8 +17,10 @@ import com.api.user.UserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class ProductoServicio {
 
 	@Autowired
@@ -29,6 +31,9 @@ public class ProductoServicio {
 	private ProductoCatalogoRepository productoCatalogoRepository;
 	@Autowired
 	private RubroRepository rubroRepository;
+
+	
+	private final PlanLimiteService planLimiteService;
 
 	// Helper para obtener tenantId del request
 	private Long getTenantId(HttpServletRequest request) {
@@ -41,13 +46,26 @@ public class ProductoServicio {
 		return productoRepository.findAllByTenantId(getTenantId(request));
 	}
 
+	private static final int LIMITE_PRODUCTOS_FREE = 1000;
+
+	
 	public productos create(HttpServletRequest request, productos producto) {
 	    String firebaseUid = (String) request.getAttribute("firebaseUid");
 	    User user = userRepository.findByFirebaseUid(firebaseUid)
 	        .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-	    producto.setTenantId(user.getTenant().getId());
-
+	    Long tenantId = user.getTenant().getId();
+	    producto.setTenantId(tenantId);
+	    
+	    if (!planLimiteService.tenantEsPremium(tenantId)) {
+	        long totalActual = productoRepository.countByTenantId(tenantId);
+	        if (totalActual >= LIMITE_PRODUCTOS_FREE) {
+	            throw new LimitePlanException(
+	                "Alcanzaste el límite de " + LIMITE_PRODUCTOS_FREE +
+	                " productos de tu plan Free. Actualizá a Premium para seguir cargando."
+	            );
+	        }
+	    }
 	    // Buscar el rubro del usuario
 	    Optional<Rubro> rubroOpt = rubroRepository.findByNombre(user.getRubro());
 

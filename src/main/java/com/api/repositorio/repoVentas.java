@@ -58,4 +58,6 @@ public interface repoVentas extends CrudRepository<Ventas, Integer> {
 	@Query("SELECT v FROM Ventas v WHERE v.tenantId = :tenantId AND v.fecha_hora BETWEEN :fechaInicio AND :fechaFin ORDER BY v.fecha_hora DESC")
 	List<Ventas> findByTenantIdAndFecha_horaBetween(@Param("tenantId") Long tenantId,
 			@Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
+	
+	long countByTenantId(Long tenantId);
 }

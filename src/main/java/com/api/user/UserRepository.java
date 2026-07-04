@@ -28,4 +28,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 	@Query("SELECT u FROM User u WHERE u.encuestaCompletada = false " + "AND u.fechaRegistro <= :limite")
 	List<User> findElegiblesParaEncuesta(@Param("limite") LocalDateTime limite);
+	
+	Optional<User> findByTenant_IdAndRol_Id(Long tenantId, Integer rolId);
 }

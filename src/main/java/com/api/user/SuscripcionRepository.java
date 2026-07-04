@@ -39,4 +39,7 @@ public interface SuscripcionRepository extends CrudRepository<Suscripcion, Integ
     // O una versión más explícita:
     @Query("SELECT s FROM Suscripcion s WHERE s.estado = 'ACTIVA' AND s.proximaRenovacion IS NOT NULL AND s.proximaRenovacion <= :ahora")
     List<Suscripcion> findSuscripcionesParaRenovar(@Param("ahora") LocalDateTime ahora);
+    
+ // SuscripcionRepository
+    Optional<Suscripcion> findFirstByUser_IdAndEstadoOrderByInicioDesc(Long userId, String estado);
 }
