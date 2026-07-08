@@ -45,14 +45,6 @@ public class OrigenReferenciaController {
                     .body(Map.of("error", "Solo propietarios pueden ver este reporte"));
             }
 
-//            Tenant tenant = user.getTenant();
-            
-            // Obtener todos los usuarios del tenant
-//            List<Long> usuariosIds = userRepository.findByTenantId(tenant.getId())
-//                .stream()
-//                .map(User::getId)
-//                .collect(Collectors.toList());
-
             // Obtener orígenes de referencia
             List<OrigenReferencia> origenes = origenReferenciaRepository.findAll();
 
@@ -68,9 +60,13 @@ public class OrigenReferenciaController {
 
             for (OrigenReferencia origen : origenes) {
                 String origenNombre = origen.getOrigen();
-                estadisticas.put(origenNombre, estadisticas.get(origenNombre) + 1);
+                
+                if (origenNombre == null || !estadisticas.containsKey(origenNombre)) {
+                    estadisticas.put("otro", estadisticas.get("otro") + 1);
+                } else {
+                    estadisticas.put(origenNombre, estadisticas.get(origenNombre) + 1);
+                }
 
-                // Si es "otro", guardar el detalle personalizado
                 if ("otro".equals(origenNombre) && origen.getOrigenPersonalizado() != null) {
                     detalleOtros.add(Map.of(
                         "fecha", origen.getFechaRegistro(),
