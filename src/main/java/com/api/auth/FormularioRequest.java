@@ -26,4 +26,5 @@ public class FormularioRequest {
     private String telefono;
     
     private String origenReferencia;
+    private String origenPersonalizado;
 }
