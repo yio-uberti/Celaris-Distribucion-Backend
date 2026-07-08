@@ -50,7 +50,6 @@ public class OrigenReferenciaController {
 
             // 🔥 Calcular estadísticas
             Map<String, Integer> estadisticas = new HashMap<>();
-            estadisticas.put("tiktok", 0);
             estadisticas.put("instagram", 0);
             estadisticas.put("familiares", 0);
             estadisticas.put("tarjeta", 0);
