@@ -62,4 +62,23 @@ public interface repoVentas extends CrudRepository<Ventas, Integer> {
 	@Query("SELECT COUNT(v) FROM Ventas v WHERE v.tenantId = :tenantId AND v.fecha_hora BETWEEN :fechaInicio AND :fechaFin")
 	long countByTenantIdAndFechaHoraBetween(@Param("tenantId") Long tenantId,
 	        @Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
+	
+	// Todas las ventas de un día, filtrando por empleado
+	@Query(value = "SELECT DISTINCT v.* FROM venta v " + "LEFT JOIN users u ON v.registrado_por = u.id "
+	        + "LEFT JOIN rol r ON u.rol_id = r.id " + "WHERE v.tenant_id = :tenantId "
+	        + "AND DATE(v.fecha_hora) = :fecha " + "AND v.estado != 'RESERVADA' "
+	        + "AND v.registrado_por = :empleadoId "
+	        + "AND (r.nombre IN ('OWNER','ADMIN','VENDEDOR','EMPLEADO') OR v.registrado_por IS NULL)", nativeQuery = true)
+	List<Ventas> findByFechaAndEmpleado(@Param("tenantId") Long tenantId, @Param("fecha") LocalDate fecha,
+	        @Param("empleadoId") Long empleadoId);
+
+	// Filtrando por tipo de pago Y empleado
+	@Query(value = "SELECT DISTINCT v.* FROM venta v " + "JOIN ventatipopago vtp ON v.id_venta = vtp.id_venta "
+	        + "JOIN tipopago tp ON vtp.id_tipo_pago = tp.id_tipo_pago "
+	        + "LEFT JOIN users u ON v.registrado_por = u.id " + "LEFT JOIN rol r ON u.rol_id = r.id "
+	        + "WHERE v.tenant_id = :tenantId " + "AND DATE(v.fecha_hora) = :fecha " + "AND v.estado != 'RESERVADA' "
+	        + "AND tp.detalle = :tipoPago " + "AND v.registrado_por = :empleadoId "
+	        + "AND (r.nombre IN ('OWNER','ADMIN','VENDEDOR','EMPLEADO') OR v.registrado_por IS NULL)", nativeQuery = true)
+	List<Ventas> findByFechaAndTipoPagoAndEmpleado(@Param("tenantId") Long tenantId, @Param("fecha") LocalDate fecha,
+	        @Param("tipoPago") String tipoPago, @Param("empleadoId") Long empleadoId);
 }

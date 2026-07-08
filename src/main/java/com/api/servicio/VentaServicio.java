@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import com.api.controlador.VentaRequest;
@@ -78,12 +79,43 @@ public class VentaServicio {
 	}
 
 	// GET -historial de ventas segun tipo de busqueda
-	public List<Ventas> getHistorial(HttpServletRequest request, LocalDate fecha, String tipoPago) {
+	public List<Ventas> getHistorial(HttpServletRequest request, LocalDate fecha, String tipoPago, Long empleadoId) {
 		Long tenantId = getTenantId(request);
-		if (tipoPago == null || tipoPago.equals("todos")) {
-			return ventaRepository.findByFecha(tenantId, fecha);
-		}
-		return ventaRepository.findByFechaAndTipoPago(tenantId, fecha, tipoPago);
+		
+		if (empleadoId != null) {
+	        validarPuedeFiltrarPorEmpleado(request, tenantId, empleadoId);
+
+	        if (tipoPago == null || tipoPago.equals("todos")) {
+	            return ventaRepository.findByFechaAndEmpleado(tenantId, fecha, empleadoId);
+	        }
+	        return ventaRepository.findByFechaAndTipoPagoAndEmpleado(tenantId, fecha, tipoPago, empleadoId);
+	    }
+
+	    if (tipoPago == null || tipoPago.equals("todos")) {
+	        return ventaRepository.findByFecha(tenantId, fecha);
+	    }
+	    return ventaRepository.findByFechaAndTipoPago(tenantId, fecha, tipoPago);
+	}
+	
+	private void validarPuedeFiltrarPorEmpleado(HttpServletRequest request, Long tenantId, Long empleadoId) {
+	    String firebaseUid = (String) request.getAttribute("firebaseUid");
+
+	    User solicitante = userRepository.findByFirebaseUid(firebaseUid)
+	        .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+	    boolean esOwner = "OWNER".equals(solicitante.getRol().getNombre());
+	    if (!esOwner) {
+	        throw new AccessDeniedException(
+	            "No tenés permisos para filtrar por empleado");
+	    }
+
+	    User empleado = userRepository.findById(empleadoId)
+	        .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+
+	    if (!empleado.getTenant().getId().equals(tenantId)) {
+	        throw new org.springframework.security.access.AccessDeniedException(
+	            "El empleado no pertenece a tu empresa");
+	    }
 	}
 
 	// GET - buscar ventas por rango de fechas

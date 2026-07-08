@@ -56,8 +56,8 @@ public class conVentas {
 	@GetMapping("/historial")
 	public ResponseEntity<?> getHistorial(HttpServletRequest request,
 	        @RequestParam LocalDate fecha,
-	        @RequestParam(required = false) String tipoPago) {
-	    List<Ventas> ventas = ventaService.getHistorial(request, fecha, tipoPago);
+	        @RequestParam(required = false) String tipoPago, @RequestParam(required = false) Long empleadoId) {
+	    List<Ventas> ventas = ventaService.getHistorial(request, fecha, tipoPago, empleadoId);
 	    return ResponseEntity.ok(ventas); // el cliente ya viene dentro de cada venta con su saldoDeudor
 	}
 	
