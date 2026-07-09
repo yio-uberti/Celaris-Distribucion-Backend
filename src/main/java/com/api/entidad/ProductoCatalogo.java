@@ -42,4 +42,7 @@ public class ProductoCatalogo {
 
 	@Column
 	private String categoria;
+	
+	@Column(name = "tipo_precio")
+	private String tipoPrecio;
 }

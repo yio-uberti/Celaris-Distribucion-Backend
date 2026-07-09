@@ -46,9 +46,17 @@ public class ProductoServicio {
 		return productoRepository.findAllByTenantId(getTenantId(request));
 	}
 
+	
+	public List<productos> buscarPorNombre(HttpServletRequest request, String query) {
+	    Long tenantId = getTenantId(request);
+	    if (query == null || query.trim().length() < 2) {
+	        return List.of(); // no busques con 0-1 letra, es ruido y carga al pedo
+	    }
+	    return productoRepository.buscarPorNombre(tenantId, query.trim());
+	}
+	
 	private static final int LIMITE_PRODUCTOS_FREE = 1000;
 
-	
 	public productos create(HttpServletRequest request, productos producto) {
 	    String firebaseUid = (String) request.getAttribute("firebaseUid");
 	    User user = userRepository.findByFirebaseUid(firebaseUid)
@@ -83,6 +91,7 @@ public class ProductoServicio {
 	            ProductoCatalogo nuevo = new ProductoCatalogo();
 	            nuevo.setNombre(producto.getNombreProducto());
 	            nuevo.setRubro(rubroOpt.get());
+	            nuevo.setTipoPrecio(producto.getTipoPrecio());
 	            ProductoCatalogo guardado = productoCatalogoRepository.save(nuevo);
 	            producto.setCatalogo(guardado);
 	            producto.setPersonalizado(false);

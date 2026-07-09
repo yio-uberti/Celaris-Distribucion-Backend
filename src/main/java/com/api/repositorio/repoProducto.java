@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.repository.query.Param;
 
 import com.api.entidad.productos;
 
@@ -26,4 +27,11 @@ public interface repoProducto extends CrudRepository<productos, Long> {
 	long countByTenantIdAndPrecioActualIsNull(Long tenantId);
 	
 	long countByTenantId(Long tenantId);
+	
+	// Repository — LIKE con límite, mucho más liviano que traer todo
+	@Query(value = "SELECT * FROM producto WHERE tenant_id = :tenantId " +
+	        "AND nombre_producto LIKE CONCAT('%', :query, '%') " +
+	        "AND (precio_actual > 0 OR tipo_precio = 'PRECIO_VARIABLE') " +
+	        "ORDER BY nombre_producto LIMIT 15", nativeQuery = true)
+	List<productos> buscarPorNombre(@Param("tenantId") Long tenantId, @Param("query") String query);
 }

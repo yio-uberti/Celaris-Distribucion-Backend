@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.api.entidad.productos;
@@ -29,6 +30,15 @@ public class conProductos {
     @GetMapping
     public ResponseEntity<List<productos>> getAll(HttpServletRequest request) {
         return ResponseEntity.ok(productoService.getAll(request));
+    }
+    
+ // Controller
+    @GetMapping("/buscar")
+    public ResponseEntity<?> buscarProductos(
+            @RequestParam String query,
+            HttpServletRequest request) {
+        List<productos> productos = productoService.buscarPorNombre(request, query);
+        return ResponseEntity.ok(productos);
     }
 
     @PostMapping
