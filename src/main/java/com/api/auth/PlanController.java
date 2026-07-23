@@ -60,34 +60,35 @@ public class PlanController {
 
 	@GetMapping("/mi-plan")
 	public ResponseEntity<?> getMiPlan(HttpServletRequest request) {
-		String uid = (String) request.getAttribute("firebaseUid");
-		User user = userRepository.findByFirebaseUid(uid)
-				.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+	    String uid = (String) request.getAttribute("firebaseUid");
+	    User user = userRepository.findByFirebaseUid(uid)
+	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-		// Verificar si la suscripción activa venció
-		suscripcionService.getSuscripcionActiva(user).ifPresent(s -> {
-			if (s.getVencimiento() != null && s.getVencimiento().isBefore(LocalDateTime.now())) {
-				s.setEstado("VENCIDA");
-				// el service se encarga de bajar a FREE
-				suscripcionService.vencerSuscripcionesExpiradas();
-			}
-		});
+	    String estadoCalculado = "SIN_SUSCRIPCION";
 
-		// Refrescar usuario por si cambió
-		user = userRepository.findByFirebaseUid(uid).orElseThrow();
+	    Optional<Suscripcion> suscripcionActiva = suscripcionService.getSuscripcionActiva(user);
+	    if (suscripcionActiva.isPresent()) {
+	        Suscripcion s = suscripcionActiva.get();
+	        if (s.getVencimiento() != null && s.getVencimiento().isBefore(LocalDateTime.now())) {
+	            s.setEstado("VENCIDA");
+	            suscripcionRepository.save(s); // persistir explícito
+	            suscripcionService.vencerSuscripcionesExpiradas(); // baja el plan del user a FREE
+	            estadoCalculado = "VENCIDA";
+	        } else {
+	            estadoCalculado = s.getEstado();
+	        }
+	    }
 
-		if (user.getPlan() == null) {
-			Plan free = planRepository.findById(1).orElseThrow();
-			user.setPlan(free);
-			userRepository.save(user);
-			return ResponseEntity.ok(new PlanResponse(free.getNombre(), "ACTIVA", null));
-		}
+	    user = userRepository.findByFirebaseUid(uid).orElseThrow(); // refrescar por si el plan cambió
 
-		Optional<Suscripcion> suscripcion = suscripcionService.getSuscripcionActiva(user);
+	    if (user.getPlan() == null) {
+	        Plan free = planRepository.findById(1).orElseThrow();
+	        user.setPlan(free);
+	        userRepository.save(user);
+	        return ResponseEntity.ok(new PlanResponse(free.getNombre(), "ACTIVA", null));
+	    }
 
-		String estado = suscripcion.map(Suscripcion::getEstado).orElse("SIN_SUSCRIPCION");
-
-		return ResponseEntity.ok(new PlanResponse(user.getPlan().getNombre(), estado, null));
+	    return ResponseEntity.ok(new PlanResponse(user.getPlan().getNombre(), estadoCalculado, null));
 	}
 
 	@PostMapping("/iniciar")
