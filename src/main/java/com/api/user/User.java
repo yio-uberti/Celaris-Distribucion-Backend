@@ -62,9 +62,9 @@ public class User {
 	@Column(name = "frecuencia_deudores")
 	private String frecuenciaDeudores;
 
-	@ManyToOne
-	@JoinColumn(name = "plan_id")
-	private Plan plan;
+//	@ManyToOne
+//	@JoinColumn(name = "plan_id")
+//	private Plan plan;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "rol_id")

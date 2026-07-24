@@ -175,7 +175,7 @@ public class MercadoPagoController {
 			String[] parts = externalRef.split("\\|");
 			String firebaseUid = parts[0];
 			String planNombre = parts[1];
-			String tenantTipo = parts.length > 2 ? parts[2] : "DISTRIBUIDOR";
+//			String tenantTipo = parts.length > 2 ? parts[2] : "DISTRIBUIDOR";
 
 			User user = userRepository.findByFirebaseUid(firebaseUid)
 					.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
@@ -194,7 +194,6 @@ public class MercadoPagoController {
 				System.out.println("      ⚠️  No se pudo obtener payment_method_id");
 			}
 
-			user.setPlan(plan);
 			userRepository.save(user);
 
 			suscripcionRepository.cancelarActivas(user.getId());
@@ -232,8 +231,9 @@ public class MercadoPagoController {
 					continue;
 				}
 
-				List<PlanPricing> precios = planPricingRepository.findByPlanAndTenant(sus.getPlan().getNombre(),
-						"DISTRIBUIDOR");
+				List<PlanPricing> precios = planPricingRepository.findByPlanAndTenant(
+				        sus.getPlan().getNombre(),
+				        sus.getUser().getTenant().getTipo());
 
 				if (precios.isEmpty())
 					continue;

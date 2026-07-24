@@ -64,31 +64,31 @@ public class PlanController {
 	    User user = userRepository.findByFirebaseUid(uid)
 	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-	    String estadoCalculado = "SIN_SUSCRIPCION";
-
 	    Optional<Suscripcion> suscripcionActiva = suscripcionService.getSuscripcionActiva(user);
-	    if (suscripcionActiva.isPresent()) {
-	        Suscripcion s = suscripcionActiva.get();
-	        if (s.getVencimiento() != null && s.getVencimiento().isBefore(LocalDateTime.now())) {
-	            s.setEstado("VENCIDA");
-	            suscripcionRepository.save(s); // persistir explícito
-	            suscripcionService.vencerSuscripcionesExpiradas(); // baja el plan del user a FREE
-	            estadoCalculado = "VENCIDA";
-	        } else {
-	            estadoCalculado = s.getEstado();
-	        }
+
+	    // Caso: no tiene ninguna suscripción activa registrada
+	    if (suscripcionActiva.isEmpty()) {
+	        return ResponseEntity.ok(new PlanResponse("FREE", "SIN_SUSCRIPCION", null));
 	    }
 
-	    user = userRepository.findByFirebaseUid(uid).orElseThrow(); // refrescar por si el plan cambió
+	    Suscripcion s = suscripcionActiva.get();
+	    String estadoCalculado;
 
-	    if (user.getPlan() == null) {
+	    if (s.getVencimiento() != null && s.getVencimiento().isBefore(LocalDateTime.now())) {
+	        s.setEstado("VENCIDA");
+	        suscripcionRepository.save(s);
+	        suscripcionService.vencerSuscripcionesExpiradas(); // mantiene sincronizado usuario.plan_id (dato secundario)
+	        estadoCalculado = "VENCIDA";
+
+	        // tras vencer, el plan real pasa a ser FREE
 	        Plan free = planRepository.findById(1).orElseThrow();
-	        user.setPlan(free);
-	        userRepository.save(user);
-	        return ResponseEntity.ok(new PlanResponse(free.getNombre(), "ACTIVA", null));
+	        return ResponseEntity.ok(new PlanResponse(free.getNombre(), estadoCalculado, null));
 	    }
 
-	    return ResponseEntity.ok(new PlanResponse(user.getPlan().getNombre(), estadoCalculado, null));
+	    estadoCalculado = s.getEstado();
+
+	    // 🔑 acá está el cambio clave: el nombre del plan sale de la SUSCRIPCIÓN, no del usuario
+	    return ResponseEntity.ok(new PlanResponse(s.getPlan().getNombre(), estadoCalculado, null));
 	}
 
 	@PostMapping("/iniciar")
@@ -113,16 +113,12 @@ public class PlanController {
 		User user = userRepository.findByFirebaseUid(firebaseUid)
 				.orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-		// Volver al plan FREE
-		Plan planFree = planRepository.findByNombre("FREE")
-				.orElseThrow(() -> new RuntimeException("Plan FREE no encontrado"));
+		 // Cancelar suscripciones activas
+	    suscripcionRepository.cancelarActivas(user.getId());
 
-		user.setPlan(planFree);
-		userRepository.save(user);
+	    // Darle una suscripción FREE activa
+	    suscripcionService.asignarFree(user);
 
-		// Cancelar suscripciones activas
-		suscripcionRepository.cancelarActivas(user.getId());
-
-		return ResponseEntity.ok().build();
+	    return ResponseEntity.ok().build();
 	}
 }

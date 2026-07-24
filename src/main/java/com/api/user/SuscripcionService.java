@@ -18,6 +18,7 @@ public class SuscripcionService {
 	private final UserRepository userRepo;
 
 	public Suscripcion asignarFree(User user) {
+		cancelarSuscripcionActiva(user); // por las dudas, asegura que no quede otra ACTIVA
 	    Plan free = planRepo.findById(1)
 	            .orElseThrow(() -> new RuntimeException("Plan FREE no encontrado"));
 
@@ -39,11 +40,8 @@ public class SuscripcionService {
 				s.setEstado("VENCIDA");
 				suscripcionRepo.save(s);
 
-				// Bajar al usuario a FREE también
-				Plan free = planRepo.findById(1).orElseThrow();
-				User user = s.getUser();
-				user.setPlan(free);
-				userRepo.save(user);
+				// Darle una nueva suscripción FREE activa
+	            asignarFree(s.getUser());
 			}
 		}
 	}
