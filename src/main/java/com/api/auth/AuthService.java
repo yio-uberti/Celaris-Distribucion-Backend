@@ -1,6 +1,7 @@
 package com.api.auth;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,6 +47,10 @@ public class AuthService {
 	@Autowired
 	private OrigenReferenciaRepository origenReferenciaRepository;
 
+	
+	private static final ZoneId ZONA_AR = ZoneId.of("America/Argentina/Buenos_Aires");
+
+	
 	// Exponé getTenantId como público
 	public Long getTenantIdPublic(HttpServletRequest request) {
 		return getTenantId(request);
@@ -102,7 +107,12 @@ public class AuthService {
 			throw new RuntimeException("Usuario no encontrado");
 		}
 
+		//para ingresa fecha de registro
+		LocalDateTime hoy = LocalDateTime.now(ZONA_AR);
+		
+		//creacion de objeto usuario
 		User userData = userOptional.get();
+		userData.setFechaRegistro(hoy);
 		userData.setNombre(formulario.getNombre());
 		userData.setApellido(formulario.getApellido());
 		userData.setEdad(formulario.getEdad());
