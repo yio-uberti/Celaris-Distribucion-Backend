@@ -57,7 +57,7 @@ public class ProductoServicio {
 	    if (query == null || query.trim().length() < 2) {
 	        return List.of(); // no busques con 0-1 letra, es ruido y carga al pedo
 	    }
-	    return productoRepository.buscarPorNombre(tenantId, query.trim());
+	    return productoRepository.buscarPorNombreCategoriaMarca(tenantId, query.trim());
 	}
 	
 	private static final int LIMITE_PRODUCTOS_FREE = 1000;

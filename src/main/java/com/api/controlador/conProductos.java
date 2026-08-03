@@ -37,7 +37,6 @@ public class conProductos {
         return ResponseEntity.ok(productoService.getAllcategorizados(request));
     }
     
- // Controller
     @GetMapping("/buscar")
     public ResponseEntity<?> buscarProductos(
             @RequestParam String query,
