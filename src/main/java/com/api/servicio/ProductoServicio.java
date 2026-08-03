@@ -110,14 +110,33 @@ public class ProductoServicio {
 	}
 
 	public productos update(HttpServletRequest request, String nombre, productos datos) {
-		Long tenantId = getTenantId(request);
-		productos producto = productoRepository.findByNombreProductoAndTenantId(nombre, tenantId)
-				.orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+	    Long tenantId = getTenantId(request);
+	    productos producto = productoRepository.findByNombreProductoAndTenantId(nombre, tenantId)
+	            .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 
-		producto.setPrecioActual(datos.getPrecioActual());
-		return productoRepository.save(producto);
+	    // Precio: solo si vino en el body (el modal de detalles no lo manda)
+	    if (datos.getPrecioActual() != null) {
+	        producto.setPrecioActual(datos.getPrecioActual());
+	    }
+
+	    // Categoría: solo si vino la clave en el body (el modal de precio no la manda)
+	    if (datos.getCategoria() != null) {
+	        String cat = datos.getCategoria().trim();
+	        producto.setCategoria(cat.isEmpty() ? null : cat);
+	    }
+
+	    // Marca: mismo criterio
+	    if (datos.getMarca() != null) {
+	        String marca = datos.getMarca().trim();
+	        producto.setMarca(marca.isEmpty() ? null : marca);
+	    }
+
+	    // nombreProducto: NO se toca acá a propósito.
+	    // El nombre es el identificador usado en la URL (GET/PUT/DELETE),
+	    // así que renombrar desde este endpoint rompería esas referencias.
+
+	    return productoRepository.save(producto);
 	}
-
 	
 //	Metodo para borrar un producto
 	@Transactional
