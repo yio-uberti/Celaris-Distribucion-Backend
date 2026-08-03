@@ -32,6 +32,11 @@ public class conProductos {
         return ResponseEntity.ok(productoService.getAll(request));
     }
     
+    @GetMapping("/categorizados")
+    public ResponseEntity<List<productos>> getCategorizados(HttpServletRequest request) {
+        return ResponseEntity.ok(productoService.getAllcategorizados(request));
+    }
+    
  // Controller
     @GetMapping("/buscar")
     public ResponseEntity<?> buscarProductos(

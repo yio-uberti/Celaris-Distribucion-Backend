@@ -42,4 +42,10 @@ public class productos {
 
 	@Column(columnDefinition = "BOOLEAN DEFAULT FALSE")
 	private Boolean personalizado = false;
+	
+	@Column(name = "categoria")
+	private String categoria;
+	
+	@Column(name = "marca")
+	private String marca;
 }

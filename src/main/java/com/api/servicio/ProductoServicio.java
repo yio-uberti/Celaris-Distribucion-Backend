@@ -42,8 +42,13 @@ public class ProductoServicio {
 				.orElseThrow(() -> new RuntimeException("Usuario no encontrado")).getTenant().getId();
 	}
 
+//	GET para traer todos los productos registrados
 	public List<productos> getAll(HttpServletRequest request) {
 		return productoRepository.findAllByTenantId(getTenantId(request));
+	}
+//	GET para traer todos los producto categorizados por marca y categoria
+	public List<productos> getAllcategorizados(HttpServletRequest request){
+		return productoRepository.listaCategorizada(getTenantId(request));
 	}
 
 	

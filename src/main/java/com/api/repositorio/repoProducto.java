@@ -34,4 +34,13 @@ public interface repoProducto extends CrudRepository<productos, Long> {
 	        "AND (precio_actual > 0 OR tipo_precio = 'PRECIO_VARIABLE') " +
 	        "ORDER BY nombre_producto LIMIT 15", nativeQuery = true)
 	List<productos> buscarPorNombre(@Param("tenantId") Long tenantId, @Param("query") String query);
+	
+	@Query(value = "SELECT + FROM producto WHERE tenant_id = :tenantId " + 
+					"ORDER BY " + 
+					"CASE WHEN categoria IS NULL OR categoria = '' THEN 1 ELSE 0 END, " +
+					"categoria, " + 
+					"CASE WHEN marca IS NULL OR marca = '' THEN 1 ELSE 0 END, " + 
+					"marca, " + 
+					"nombre_producto", nativeQuery = true)
+	List<productos> listaCategorizada(@Param("tenantId") Long tenantId);
 }
