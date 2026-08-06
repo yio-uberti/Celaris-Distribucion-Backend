@@ -41,12 +41,15 @@ public interface repoProducto extends CrudRepository<productos, Long> {
 	        "AND (precio_actual > 0 OR tipo_precio = 'PRECIO_VARIABLE') " +
 	        "AND (nombre_producto LIKE CONCAT('%', :query, '%') " +
 	        "     OR categoria LIKE CONCAT('%', :query, '%') " +
-	        "     OR marca LIKE CONCAT('%', :query, '%')) " +
+	        "     OR marca LIKE CONCAT('%', :query, '%') " +
+	        "     OR codigo LIKE CONCAT('%', :query, '%')) " +
 	        "ORDER BY " +
-	        "  CASE WHEN nombre_producto LIKE CONCAT(:query, '%') THEN 0 " +
-	        "       WHEN categoria LIKE CONCAT(:query, '%') THEN 1 " +
-	        "       WHEN marca LIKE CONCAT(:query, '%') THEN 2 " +
-	        "       ELSE 3 END, " +
+	        "  CASE WHEN codigo = :query THEN 0 " +           // match exacto de código primero
+	        "       WHEN nombre_producto LIKE CONCAT(:query, '%') THEN 1 " +
+	        "       WHEN codigo LIKE CONCAT(:query, '%') THEN 2 " +
+	        "       WHEN categoria LIKE CONCAT(:query, '%') THEN 3 " +
+	        "       WHEN marca LIKE CONCAT(:query, '%') THEN 4 " +
+	        "       ELSE 5 END, " +
 	        "  nombre_producto " +
 	        "LIMIT 15", nativeQuery = true)
 	List<productos> buscarPorNombreCategoriaMarca(@Param("tenantId") Long tenantId, @Param("query") String query);

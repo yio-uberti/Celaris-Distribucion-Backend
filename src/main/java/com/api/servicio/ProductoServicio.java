@@ -61,7 +61,8 @@ public class ProductoServicio {
 	}
 	
 	private static final int LIMITE_PRODUCTOS_FREE = 1000;
-
+	
+//	POST para crear productos
 	public productos create(HttpServletRequest request, productos producto) {
 	    String firebaseUid = (String) request.getAttribute("firebaseUid");
 	    User user = userRepository.findByFirebaseUid(firebaseUid)
@@ -109,6 +110,7 @@ public class ProductoServicio {
 	    return productoRepository.save(producto);
 	}
 
+//	PUT para actializar datos del producto
 	public productos update(HttpServletRequest request, String nombre, productos datos) {
 	    Long tenantId = getTenantId(request);
 	    productos producto = productoRepository.findByNombreProductoAndTenantId(nombre, tenantId)
@@ -131,10 +133,15 @@ public class ProductoServicio {
 	        producto.setMarca(marca.isEmpty() ? null : marca);
 	    }
 
-	    // nombreProducto: NO se toca acá a propósito.
-	    // El nombre es el identificador usado en la URL (GET/PUT/DELETE),
-	    // así que renombrar desde este endpoint rompería esas referencias.
-
+	    if (datos.getCodigo() != null) {
+	        String codigo = datos.getCodigo().trim();
+	        producto.setCodigo(codigo.isEmpty() ? null : codigo);
+	    }
+	    if (datos.getDescripcion() != null) {
+	        String desc = datos.getDescripcion().trim();
+	        producto.setDescripcion(desc.isEmpty() ? null : desc);
+	    }
+	    
 	    return productoRepository.save(producto);
 	}
 	

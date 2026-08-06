@@ -48,4 +48,10 @@ public class productos {
 	
 	@Column(name = "marca")
 	private String marca;
+	
+	@Column(name ="codigo", length = 50)
+	private String codigo;
+	
+	@Column(name = "descripcion", columnDefinition = "TEXT")
+	private String descripcion;
 }
