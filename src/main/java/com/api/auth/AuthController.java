@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.api.repositorio.DetalleVentaRepository;
+import com.api.repositorio.EncuestaSatisfaccionRepository;
 import com.api.repositorio.VentaTipoPagoRepository;
 import com.api.repositorio.repoClientes;
 import com.api.repositorio.repoPagoDeuda;
@@ -62,6 +63,8 @@ public class AuthController {
 	private InvitacionRepository invitacionRepository;
 	@Autowired
 	private EmailsEliminadosRepository emailsEliminadosRepository; 
+	@Autowired
+	private EncuestaSatisfaccionRepository encuestaSatisfaccionRepository;
 
 //	Metodo para traer datos del usuario
 	@GetMapping("/me")
@@ -209,6 +212,9 @@ public class AuthController {
 
 			// 7.5 Borrar invitaciones			
 			invitacionRepository.deleteAllByTenantId(tenantId);
+			
+			// 7.6 Borrar encuesta de satisfacción
+			encuestaSatisfaccionRepository.deleteByUserId(userId);
 			
 			// 8. Borrar usuario
 			userRepository.delete(user);
