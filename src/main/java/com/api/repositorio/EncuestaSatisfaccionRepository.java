@@ -24,6 +24,6 @@ public interface EncuestaSatisfaccionRepository extends JpaRepository<EncuestaSa
     List<EncuestaSatisfaccion> findAllByOrderByFechaRespuestaDesc();
     
     @Modifying
-    @Query("DELETE FROM EncuestaSatisfaccion e WHERE e.user.id = :userId")
+    @Query(value = "DELETE FROM encuesta_satisfaccion WHERE user_id = :userId", nativeQuery = true)
     void deleteByUserId(@Param("userId") Long userId);
 }
