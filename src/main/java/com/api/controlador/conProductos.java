@@ -67,4 +67,17 @@ public class conProductos {
         productoService.delete(request, nombre);
         return ResponseEntity.noContent().build();
     }
+    
+//    nuevo endpoint para error 12/10
+    @PutMapping("/id/{id}")
+    public ResponseEntity<productos> updateById(HttpServletRequest request,
+            @PathVariable Long id, @RequestBody productos producto) {
+        return ResponseEntity.ok(productoService.updateById(request, id, producto));
+    }
+
+    @DeleteMapping("/id/{id}")
+    public ResponseEntity<Void> deleteById(HttpServletRequest request, @PathVariable Long id) {
+        productoService.deleteById(request, id);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -15,4 +15,6 @@ public interface repoPagoDeuda extends CrudRepository<PagoDeuda, Integer>{
 	@Modifying
 	@Query("DELETE FROM PagoDeuda pd WHERE pd.tenantId = :tenantId")
 	void deleteAllByTenantId(@Param("tenantId") Long tenantId);
+	
+	List<PagoDeuda> findAllByClienteIdClienteAndTenantIdOrderByFechaDesc(Integer idCliente, Long tenantId);
 }

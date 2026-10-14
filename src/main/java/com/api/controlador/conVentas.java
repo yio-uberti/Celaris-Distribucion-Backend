@@ -1,12 +1,12 @@
 package com.api.controlador;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -63,26 +63,16 @@ public class conVentas {
 	
 	@GetMapping("/buscar-por-fechas")
 	public ResponseEntity<List<Ventas>> buscarPorFechas(
-			@RequestParam(value = "fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
-			@RequestParam(value = "fechaFin", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
-			HttpServletRequest request) {
-		try {
-			List<Ventas> ventas = ventaService.getVentasPorRangoDeFechas(request, fechaInicio, fechaFin);
-			return ResponseEntity.ok(ventas);
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-		}
+	        @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+	        @RequestParam(value = "fechaFin", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
+	        HttpServletRequest request) {
+	    return ResponseEntity.ok(ventaService.getVentasPorRangoDeFechas(request, fechaInicio, fechaFin));
 	}
 
 	@GetMapping("/hoy")
 	public ResponseEntity<List<Ventas>> getVentasHoy(HttpServletRequest request) {
-		try {
-			LocalDate hoy = LocalDate.now();
-			List<Ventas> ventas = ventaService.getVentasPorRangoDeFechas(request, hoy, hoy);
-			return ResponseEntity.ok(ventas);
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-		}
+	    LocalDate hoy = LocalDate.now(ZoneId.of("America/Argentina/Buenos_Aires"));
+	    return ResponseEntity.ok(ventaService.getVentasPorRangoDeFechas(request, hoy, hoy));
 	}
 
 //	Metodo para registrar una venta 
@@ -129,25 +119,15 @@ public class conVentas {
 
 	// Endpoint DELETE en lote
 	@DeleteMapping("/lote")
-	public ResponseEntity<?> deleteLote(
-	    @RequestBody DeleteLoteRequest request,
-	    HttpServletRequest httpRequest) {
-	    try {
-	        ventaService.deleteLote(request.getIds(), httpRequest);
-	        return ResponseEntity.noContent().build();
-	    } catch (RuntimeException e) {
-	        return ResponseEntity.status(403).body("Error: " + e.getMessage());
-	    }
+	public ResponseEntity<?> deleteLote(@RequestBody DeleteLoteRequest request, HttpServletRequest httpRequest) {
+	    ventaService.deleteLote(request.getIds(), httpRequest);
+	    return ResponseEntity.noContent().build();
 	}
-
 	
 //	Metodo para borrar o cancelar una venta individual
 	@DeleteMapping("/{id}")
 	public ResponseEntity<?> delete(@PathVariable Integer id, HttpServletRequest request) {
-	    Long tenantId = ventaService.getTenantIdPublic(request);
-	    ventaRepository.findByIdVentaAndTenantId(id, tenantId)
-	        .orElseThrow(() -> new RuntimeException("Venta no encontrada"));
-	    ventaRepository.deleteById(id);
+	    ventaService.deleteLote(List.of(id), request);   // mismo camino que el lote
 	    return ResponseEntity.noContent().build();
 	}
 }

@@ -1,15 +1,19 @@
 package com.api.servicio;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.api.controlador.VentaRequest;
 import com.api.controlador.top5productos;
@@ -137,7 +141,7 @@ public class VentaServicio {
 
 		// Convertir a LocalDateTime para hacer la consulta
 		LocalDateTime inicioDelDia = fechaInicio.atStartOfDay();
-		LocalDateTime finDelDia = fechaFin.atTime(23, 59, 59);
+		LocalDateTime finDelDia = fechaFin.plusDays(1).atStartOfDay();
 
 		return ventaRepository.findByTenantIdAndFecha_horaBetween(tenantId, inicioDelDia, finDelDia);
 	}
@@ -146,7 +150,16 @@ public class VentaServicio {
 	@Transactional
 	public Ventas create(HttpServletRequest request, VentaRequest req) {
 		Long tenantId = getTenantId(request);
+		
+		if (req.getNombreCliente() == null || req.getNombreCliente().isBlank()) 
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta el cliente");
 
+		if (req.getDetalles() == null || req.getDetalles().isEmpty())
+		    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La venta no tiene productos");
+		int desc = req.getDescuento() != null ? req.getDescuento() : 0;
+		if (desc < 0 || desc > 100)
+		    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Descuento inválido");
+		
 		// 🔒 Límite de plan Free — 1500 ventas POR MES, no acumuladas de por vida
 		if (!planLimiteService.tenantEsPremium(tenantId)) {
 			LocalDate hoy = LocalDate.now(ZONA_AR);
@@ -178,7 +191,7 @@ public class VentaServicio {
 		venta.setFechaEntrega(fechaEntrega != null ? fechaEntrega : hoy);
 		venta.setEstado(esReservada ? "RESERVADA" : "REGISTRADA");
 		venta.setTenantId(tenantId);
-		venta.setDescuento(req.getDescuento() != null ? req.getDescuento() : 0);
+		venta.setDescuento(desc);
 
 		// Después de crear la venta base
 		String uid = (String) request.getAttribute("firebaseUid");
@@ -191,29 +204,54 @@ public class VentaServicio {
 		BigDecimal total = BigDecimal.ZERO;
 
 		for (VentaRequest.DetalleRequest d : req.getDetalles()) {
-			productos producto = productoRepository.findByIdProdAndTenantId(d.getIdProducto(), tenantId)
-					.orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+		    productos producto = productoRepository.findByIdProdAndTenantId(d.getIdProducto(), tenantId)
+		            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
 
-			BigDecimal precioUnitario = (d.getPrecioUnitario() != null) ? d.getPrecioUnitario()
-					: producto.getPrecioActual();
-			BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(d.getCantidad()));
-			detalles.add(DetalleVenta.builder().venta(venta).producto(producto).cantidad(d.getCantidad())
-					.precio_unitario(precioUnitario).subtotal(subtotal).build());
+		    boolean variable = "PRECIO_VARIABLE".equals(String.valueOf(producto.getTipoPrecio()))
+		            || (producto.getTipoPrecio() == null
+		                && (producto.getPrecioActual() == null || producto.getPrecioActual().signum() == 0));
+		    BigDecimal precioUnitario = variable ? d.getPrecioUnitario() : producto.getPrecioActual();
+		    if (precioUnitario == null || precioUnitario.signum() <= 0)
+		        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Precio inválido: " + producto.getNombreProducto());
+		    if (d.getCantidad() == null || d.getCantidad() <= 0)
+		        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cantidad inválida");
 
-			total = total.add(subtotal);
+		    BigDecimal subtotal = precioUnitario.multiply(BigDecimal.valueOf(d.getCantidad()));
+		    detalles.add(DetalleVenta.builder().venta(venta).producto(producto).cantidad(d.getCantidad())
+		            .precio_unitario(precioUnitario).subtotal(subtotal).build());
+		    total = total.add(subtotal);
 		}
 
+		// Si la venta a registrar tiene descuento
 		if (req.getDescuento() != null && req.getDescuento() > 0) {
 			BigDecimal porcentajeDescuento = BigDecimal.valueOf(req.getDescuento());
 			BigDecimal montoDescuento = total.multiply(porcentajeDescuento).divide(BigDecimal.valueOf(100));
-			total = total.subtract(montoDescuento);
+			total = total.subtract(montoDescuento).setScale(2, RoundingMode.HALF_UP);
 		}
 
 		venta.setTotal(total);
 		venta.setDetalles(detalles);
 
 		// Pagos — solo si NO es reservada
-		if (!esReservada && req.getPagos() != null && !req.getPagos().isEmpty()) {
+		if (!esReservada) {
+			if (req.getPagos() == null || req.getPagos().isEmpty())
+		        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta registrar el pago");
+
+		    BigDecimal totalPagado = BigDecimal.ZERO;
+		    for (var p : req.getPagos()) {
+		        if (p.getMonto() == null || p.getMonto().signum() < 0)
+		            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Monto de pago inválido");
+		        totalPagado = totalPagado.add(p.getMonto());
+		    }
+		    if (totalPagado.compareTo(total) > 0)
+		        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El pago excede el total");
+		    if (!planLimiteService.tenantEsPremium(tenantId) && totalPagado.compareTo(total) < 0)
+		        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tu plan no permite deudas parciales");
+
+		    BigDecimal deuda = total.subtract(totalPagado);
+		    if (deuda.signum() > 0 && "cliente".equalsIgnoreCase(req.getNombreCliente().trim()))
+		        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Para dejar deuda elegí un cliente específico");
+			
 			List<VentaTipoPago> pagos = new ArrayList<>(req.getPagos().stream().map(p -> {
 				TipoPago tipoPago = tipoPagoRepository.findById(p.getIdTipoPago())
 						.orElseThrow(() -> new RuntimeException("Tipo de pago no encontrado"));
@@ -221,11 +259,7 @@ public class VentaServicio {
 			}).toList());
 
 			venta.setPagos(pagos);
-
-			// Calcular deuda
-			BigDecimal totalPagado = req.getPagos().stream().map(p -> p.getMonto()).reduce(BigDecimal.ZERO,
-					BigDecimal::add);
-			BigDecimal deuda = total.subtract(totalPagado);
+			
 			if (deuda.compareTo(BigDecimal.ZERO) > 0) {
 				cliente.setSaldoDeudor(
 						(cliente.getSaldoDeudor() != null ? cliente.getSaldoDeudor() : BigDecimal.ZERO).add(deuda));
@@ -233,7 +267,6 @@ public class VentaServicio {
 			}
 		}
 
-		userRepository.findByFirebaseUid(uid).ifPresent(venta::setRegistradoPor);
 		return ventaRepository.save(venta);
 	}
 
@@ -243,6 +276,22 @@ public class VentaServicio {
 		Long tenantId = getTenantId(request);
 		Ventas venta = ventaRepository.findByIdVentaAndTenantId(id, tenantId)
 				.orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+		
+		if (!"RESERVADA".equals(venta.getEstado()))
+		    throw new ResponseStatusException(HttpStatus.CONFLICT, "La venta ya fue entregada");
+		if (req.getPagos() == null || req.getPagos().isEmpty())
+		    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Falta registrar el pago");
+		
+		BigDecimal pagado = BigDecimal.ZERO;
+		for (var p : req.getPagos()) {
+		    if (p.getMonto() == null || p.getMonto().signum() < 0)
+		        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Monto de pago inválido");
+		    pagado = pagado.add(p.getMonto());
+		}
+		if (pagado.compareTo(venta.getTotal()) > 0)
+		    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El pago excede el total");
+		if (!planLimiteService.tenantEsPremium(tenantId) && pagado.compareTo(venta.getTotal()) < 0)
+		    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Tu plan no permite deudas parciales");
 
 		// Registrar pagos
 		List<VentaTipoPago> pagos = new ArrayList<>(req.getPagos().stream().map(p -> {
@@ -256,9 +305,7 @@ public class VentaServicio {
 		venta.setEstado("ENTREGADA");
 
 		// Calcular deuda
-		BigDecimal totalPagado = req.getPagos().stream().map(VentaRequest.PagoRequest::getMonto).reduce(BigDecimal.ZERO,
-				BigDecimal::add);
-		BigDecimal deuda = venta.getTotal().subtract(totalPagado);
+		BigDecimal deuda = venta.getTotal().subtract(pagado);
 
 		if (deuda.compareTo(BigDecimal.ZERO) > 0) {
 			clientes cliente = venta.getCliente();
@@ -278,6 +325,9 @@ public class VentaServicio {
 		Ventas venta = ventaRepository.findByIdVentaAndTenantId(id, tenantId)
 				.orElseThrow(() -> new RuntimeException("Venta no encontrada"));
 
+		if (!"RESERVADA".equals(venta.getEstado()))
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se pueden editar reservadas");
+		
 		// Recalcular detalles y total
 		List<DetalleVenta> nuevosDetalles = new ArrayList<>();
 		BigDecimal total = BigDecimal.ZERO;
@@ -311,18 +361,39 @@ public class VentaServicio {
 	// DELETE - borrar ventas en lote
 	@Transactional
 	public void deleteLote(List<Integer> ids, HttpServletRequest request) {
-		Long tenantId = getTenantId(request);
+	    Long tenantId = getTenantId(request);
 
-		// Validar que todas las ventas pertenezcan al tenant
-		List<Ventas> ventas = (List<Ventas>) ventaRepository.findAllById(ids);
+	    // Parche mientras no uses el permiso BORRAR_VENTAS en el backend: ajustalo a tu mecanismo
+	    String uid = (String) request.getAttribute("firebaseUid");
+	    User solicitante = userRepository.findByFirebaseUid(uid)
+	            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
+	    String rol = solicitante.getRol().getNombre();
+	    if (!"OWNER".equals(rol) && !"ADMIN".equals(rol))
+	        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tenés permiso para borrar ventas");
 
-		for (Ventas venta : ventas) {
-			if (!venta.getTenantId().equals(tenantId)) {
-				throw new RuntimeException("No tienes permisos para borrar esta venta");
-			}
-		}
+	    if (ids == null || ids.isEmpty())
+	        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Sin ventas");
 
-		// Borrar en cascada (VentaTipoPago y DetalleVenta se borran automáticamente)
-		ventaRepository.deleteAllById(ids);
+	    List<Ventas> ventas = (List<Ventas>) ventaRepository.findAllById(ids);
+	    if (ventas.size() != new HashSet<>(ids).size())
+	        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Alguna venta ya no existe");
+	    for (Ventas v : ventas)
+	        if (!tenantId.equals(v.getTenantId()))
+	            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tenés permisos para borrar esta venta");
+
+	    // Devolver la deuda que dejó cada venta
+	    for (Ventas v : ventas) {
+	        clientes c = v.getCliente();
+	        if (c == null || "RESERVADA".equals(v.getEstado())) continue;
+	        BigDecimal pagado = v.getPagos().stream().map(VentaTipoPago::getMonto)
+	                .reduce(BigDecimal.ZERO, BigDecimal::add);
+	        BigDecimal deuda = v.getTotal().subtract(pagado);
+	        if (deuda.signum() > 0) {
+	            BigDecimal saldo = c.getSaldoDeudor() != null ? c.getSaldoDeudor() : BigDecimal.ZERO;
+	            c.setSaldoDeudor(saldo.subtract(deuda).max(BigDecimal.ZERO));
+	            clienteRepository.save(c);
+	        }
+	    }
+	    ventaRepository.deleteAllById(ids);
 	}
 }

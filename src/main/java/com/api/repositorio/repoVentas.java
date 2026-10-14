@@ -55,11 +55,11 @@ public interface repoVentas extends CrudRepository<Ventas, Integer> {
 	@Query("DELETE FROM Ventas v WHERE v.tenantId = :tenantId")
 	void deleteAllByTenantId(Long tenantId);
 
-	@Query("SELECT v FROM Ventas v WHERE v.tenantId = :tenantId AND v.fecha_hora BETWEEN :fechaInicio AND :fechaFin ORDER BY v.fecha_hora DESC")
+	@Query("SELECT v FROM Ventas v WHERE v.tenantId = :tenantId AND v.fecha_hora >= :fechaInicio AND v.fecha_hora < :fechaFin ORDER BY v.fecha_hora DESC")
 	List<Ventas> findByTenantIdAndFecha_horaBetween(@Param("tenantId") Long tenantId,
-			@Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
+	        @Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
 	
-	@Query("SELECT COUNT(v) FROM Ventas v WHERE v.tenantId = :tenantId AND v.fecha_hora BETWEEN :fechaInicio AND :fechaFin")
+	@Query("SELECT COUNT(v) FROM Ventas v WHERE v.tenantId = :tenantId AND v.fecha_hora >= :fechaInicio AND v.fecha_hora < :fechaFin")
 	long countByTenantIdAndFechaHoraBetween(@Param("tenantId") Long tenantId,
 	        @Param("fechaInicio") LocalDateTime fechaInicio, @Param("fechaFin") LocalDateTime fechaFin);
 	
@@ -81,4 +81,9 @@ public interface repoVentas extends CrudRepository<Ventas, Integer> {
 	        + "AND (r.nombre IN ('OWNER','ADMIN','VENDEDOR','EMPLEADO') OR v.registrado_por IS NULL)", nativeQuery = true)
 	List<Ventas> findByFechaAndTipoPagoAndEmpleado(@Param("tenantId") Long tenantId, @Param("fecha") LocalDate fecha,
 	        @Param("tipoPago") String tipoPago, @Param("empleadoId") Long empleadoId);
+
+	//Consulta para mercaderia del cliente
+	@Query("SELECT v FROM Ventas v WHERE v.tenantId = :tenantId AND v.cliente.idCliente = :idCliente "
+		     + "AND v.estado <> 'RESERVADA' ORDER BY v.fecha_hora DESC")
+		List<Ventas> findParaMercaderia(@Param("tenantId") Long tenantId, @Param("idCliente") Integer idCliente);
 }

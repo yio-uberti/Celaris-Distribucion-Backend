@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.api.entidad.ProductoCatalogo;
 import com.api.entidad.productos;
@@ -153,4 +155,48 @@ public class ProductoServicio {
 				.orElseThrow(() -> new RuntimeException("Producto no encontrado"));
 		productoRepository.deleteByNombreProductoAndTenantId(nombre, tenantId);
 	}
+	
+	private productos buscarPropio(Long id, Long tenantId) {
+	    return productoRepository.findByIdProdAndTenantId(id, tenantId)
+	        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
+	}
+
+	public productos updateById(HttpServletRequest request, Long id, productos datos) {
+		
+
+	    Long tenantId = getTenantId(request);		if (datos.getNombreProducto() != null) {
+		    String nuevo = datos.getNombreProducto().trim();
+		    boolean existe = productoRepository
+		        .existsByNombreProductoAndTenantIdAndIdProdNot(nuevo, tenantId, id);
+		    if (existe) throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un producto con ese nombre");
+		}
+		
+	    productos producto = buscarPropio(id, tenantId);
+	    aplicarCambios(producto, datos);
+	    return productoRepository.save(producto);
+	}
+
+	@Transactional
+	public void deleteById(HttpServletRequest request, Long id) {
+	    Long tenantId = getTenantId(request);
+	    productoRepository.delete(buscarPropio(id, tenantId));
+	}
+
+	private void aplicarCambios(productos producto, productos datos) {
+	    if (datos.getNombreProducto() != null && !datos.getNombreProducto().isBlank())
+	        producto.setNombreProducto(datos.getNombreProducto().trim());
+	    if (datos.getTipoPrecio() != null)
+	        producto.setTipoPrecio(datos.getTipoPrecio());
+	    if (datos.getPrecioActual() != null)
+	        producto.setPrecioActual(datos.getPrecioActual());
+	    if (datos.getCategoria() != null) 
+	    	producto.setCategoria(datos.getCategoria());
+		if(datos.getMarca() != null)
+			producto.setMarca(datos.getMarca());
+	    if(datos.getCodigo() != null)
+	    	producto.setCodigo(datos.getCodigo());
+	    if(datos.getDescripcion() != null)
+	    	producto.setDescripcion(datos.getDescripcion());
+	}
+	
 }

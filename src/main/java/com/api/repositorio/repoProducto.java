@@ -17,6 +17,8 @@ public interface repoProducto extends CrudRepository<productos, Long> {
 
 	Optional<productos> findByNombreProductoAndTenantId(String nombre, Long tenantId);
 
+	boolean existsByNombreProductoAndTenantIdAndIdProdNot(String nuevo, Long tenantId, Long id);
+	
 	@Modifying
 	void deleteByNombreProductoAndTenantId(String nombre, Long tenantId);
 	
@@ -62,4 +64,6 @@ public interface repoProducto extends CrudRepository<productos, Long> {
 					"marca, " + 
 					"nombre_producto", nativeQuery = true)
 	List<productos> listaCategorizada(@Param("tenantId") Long tenantId);
+
+
 }
