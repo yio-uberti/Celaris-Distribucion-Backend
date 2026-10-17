@@ -49,15 +49,13 @@ public class EmpleadoServicio {
 
     
     public List<EmpleadoRequest> listarEmpleados(HttpServletRequest request) {
-        String firebaseUid = (String) request.getAttribute("firebaseUid");
-
-        User owner = gestor(request);
-
-        Long tenantId = owner.getTenant().getId();
+    	User yo = gestor(request);
+        boolean soyOwner = "OWNER".equals(yo.getRol().getNombre());
+        Long tenantId = yo.getTenant().getId();
 
         // Todos los users del mismo tenant excepto él mismo
-        return userRepository.findByTenantIdAndIdNot(tenantId, owner.getId())
-        	    .stream()
+        return userRepository.findByTenantIdAndIdNot(tenantId, yo.getId())
+        	    .stream().filter(u -> soyOwner || !"OWNER".equals(u.getRol().getNombre())) 
         	    .map(u -> {
         	        // Buscar la invitación de este empleado para obtener creadoEn
         	    	LocalDateTime creadoEn = invitacionRepository
