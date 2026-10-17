@@ -22,7 +22,9 @@ import com.api.user.User;
 import com.api.user.UserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class EmpleadoServicio {
 
@@ -117,6 +119,7 @@ public class EmpleadoServicio {
         try {
             enviarEmailInvitacion(email, token, owner.getTenant().getNombreFantasia());
         } catch (Exception e) {
+        	log.error("Fallo al enviar email de invitación a {}", email, e); 
             invitacionRepository.delete(inv);   // que no quede una invitación que nunca llegó
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "No se pudo enviar el email. Intentá de nuevo.");
         }
