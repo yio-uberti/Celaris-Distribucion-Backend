@@ -2,16 +2,18 @@ package com.api.servicio;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.api.auth.InvitarEmpleadoRequest;
 import com.api.controlador.EmpleadoRequest;
-import com.api.tenant.TenantRepository;
 import com.api.user.InvitacionEmpleado;
 import com.api.user.InvitacionRepository;
 import com.api.user.Rol;
@@ -25,18 +27,29 @@ import jakarta.servlet.http.HttpServletRequest;
 public class EmpleadoServicio {
 
 	@Autowired private InvitacionRepository invitacionRepository;
-    @Autowired private TenantRepository tenantRepository;
     @Autowired private RolRepositorio rolRepository;
     @Autowired private UserRepository userRepository;
     @Autowired
     private JavaMailSender mailSender;
     
     
+    private static final Set<String> ROLES_INVITABLES = Set.of("ADMIN", "VENDEDOR", "REPARTIDOR", "EMPLEADO");
+
+    private User gestor(HttpServletRequest request) {
+        String uid = (String) request.getAttribute("firebaseUid");
+        User u = userRepository.findByFirebaseUid(uid)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
+        String rol = u.getRol().getNombre();
+        if (!"OWNER".equals(rol) && !"ADMIN".equals(rol))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sin permisos");
+        return u;
+    }
+
+    
     public List<EmpleadoRequest> listarEmpleados(HttpServletRequest request) {
         String firebaseUid = (String) request.getAttribute("firebaseUid");
 
-        User owner = userRepository.findByFirebaseUid(firebaseUid)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        User owner = gestor(request);
 
         Long tenantId = owner.getTenant().getId();
 
@@ -67,35 +80,46 @@ public class EmpleadoServicio {
     }
 
     public void invitarEmpleado(HttpServletRequest request, InvitarEmpleadoRequest body) {
-        String firebaseUid = (String) request.getAttribute("firebaseUid");
+        User owner = gestor(request);
+        Long tenantId = owner.getTenant().getId();
 
-        User owner = userRepository.findByFirebaseUid(firebaseUid)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        // Solo OWNER o ADMIN pueden invitar
-        String rolNombre = owner.getRol().getNombre();
-        if (!rolNombre.equals("OWNER") && !rolNombre.equals("ADMIN")) {
-            throw new RuntimeException("Sin permisos para invitar empleados");
-        }
+        String email = body.getEmail() == null ? "" : body.getEmail().trim().toLowerCase();
+        if (!email.matches("^\\S+@\\S+\\.\\S+$"))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email inválido");
 
         Rol rol = rolRepository.findById(body.getRolId())
-            .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Rol no encontrado"));
+        String nombreRol = rol.getNombre();
+        if (!ROLES_INVITABLES.contains(nombreRol))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Rol no permitido");
+        if ("ADMIN".equals(nombreRol) && !"OWNER".equals(owner.getRol().getNombre()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el dueño puede invitar administradores");
 
-        // Generar token único
+        // Mismo chequeo de plan/cupo que usa /auth/puede-agregar-empleado
+        // if (!puedeAgregarEmpleado(tenantId)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Alcanzaste el límite de empleados");
+
+        if (userRepository.existsByEmail(email))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ese email ya tiene una cuenta");
+        if (invitacionRepository.existsByEmailAndTenantIdAndEstado(email, tenantId, "PENDIENTE"))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya hay una invitación pendiente para ese email");
+
         String token = UUID.randomUUID().toString();
+        InvitacionEmpleado inv = new InvitacionEmpleado();
+        inv.setTenant(owner.getTenant());
+        inv.setEmail(email);
+        inv.setRol(rol);
+        inv.setToken(token);
+        inv.setEstado("PENDIENTE");
+        inv.setCreadoEn(LocalDateTime.now());
+        inv.setVenceEn(LocalDateTime.now().plusDays(7));
+        inv = invitacionRepository.save(inv);
 
-        InvitacionEmpleado invitacion = new InvitacionEmpleado();
-        invitacion.setTenant(owner.getTenant());
-        invitacion.setEmail(body.getEmail());
-        invitacion.setRol(rol);
-        invitacion.setToken(token);
-        invitacion.setEstado("PENDIENTE");
-        invitacion.setCreadoEn(LocalDateTime.now());
-        invitacion.setVenceEn(LocalDateTime.now().plusDays(7));
-        invitacionRepository.save(invitacion);
-
-        // Enviar email via Firebase
-        enviarEmailInvitacion(body.getEmail(), token, owner.getTenant().getNombreFantasia());
+        try {
+            enviarEmailInvitacion(email, token, owner.getTenant().getNombreFantasia());
+        } catch (Exception e) {
+            invitacionRepository.delete(inv);   // que no quede una invitación que nunca llegó
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "No se pudo enviar el email. Intentá de nuevo.");
+        }
     }
 
     private void enviarEmailInvitacion(String email, String token, String nombreEmpresa) {
@@ -115,22 +139,15 @@ public class EmpleadoServicio {
     
  // En EmpleadoServicio
     public void revocarEmpleado(HttpServletRequest request, Long empleadoId) {
-        String firebaseUid = (String) request.getAttribute("firebaseUid");
-        User owner = userRepository.findByFirebaseUid(firebaseUid)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-
-        String rol = owner.getRol().getNombre();
-        if (!rol.equals("OWNER") && !rol.equals("ADMIN")) {
-            throw new RuntimeException("Sin permisos");
-        }
-
+        User owner = gestor(request);
         User empleado = userRepository.findById(empleadoId)
-            .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
-
-        // Verificar que pertenece al mismo tenant
-        if (!empleado.getTenant().getId().equals(owner.getTenant().getId())) {
-            throw new RuntimeException("Sin permisos sobre este empleado");
-        }
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Empleado no encontrado"));
+        if (!empleado.getTenant().getId().equals(owner.getTenant().getId()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sin permisos sobre este empleado");
+        if (empleado.getId().equals(owner.getId()) || "OWNER".equals(empleado.getRol().getNombre()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No se puede revocar al dueño");
+        if ("ADMIN".equals(empleado.getRol().getNombre()) && !"OWNER".equals(owner.getRol().getNombre()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo el dueño puede revocar administradores");
 
         empleado.setActivo(false);
         userRepository.save(empleado);

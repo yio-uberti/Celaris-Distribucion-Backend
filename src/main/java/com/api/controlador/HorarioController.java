@@ -1,7 +1,6 @@
 package com.api.controlador;
 
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.api.entidad.HorarioEmpleado;
 import com.api.servicio.HorarioServicio;
 import com.api.servicio.HorarioServicio.HorarioRequest;
-import com.api.user.User;
 import com.api.user.UserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,25 +43,7 @@ public class HorarioController {
     }
     
     @GetMapping("/puede-entrar/{usuarioId}")
-    public ResponseEntity<?> puedeEntrar(
-        @PathVariable Long usuarioId,
-        HttpServletRequest request) {
-        
-        String firebaseUid = (String) request.getAttribute("firebaseUid");
-        User owner = userRepository.findByFirebaseUid(firebaseUid)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        
-        User usuario = userRepository.findById(usuarioId)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        
-        // Verificar que sea del mismo tenant
-        if (!usuario.getTenant().getId().equals(owner.getTenant().getId())) {
-            return ResponseEntity.status(403).body(
-                Map.of("error", "No tienes permisos")
-            );
-        }
-        
-        boolean puede = horarioServicio.puedeEntrar(usuarioId);
-        return ResponseEntity.ok(puede);
+    public ResponseEntity<Boolean> puedeEntrar(@PathVariable Long usuarioId, HttpServletRequest request) {
+        return ResponseEntity.ok(horarioServicio.puedeEntrarAutorizado(usuarioId, request));
     }
 }

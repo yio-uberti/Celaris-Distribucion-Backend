@@ -8,6 +8,8 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -320,42 +322,59 @@ public class VentaServicio {
 //	PUT para editar una venta agregar o quitra productos
 	@Transactional
 	public Ventas editarProductos(Integer id, List<VentaRequest.DetalleRequest> detalles, HttpServletRequest request) {
-		Long tenantId = getTenantId(request);
+	    Long tenantId = getTenantId(request);
 
-		Ventas venta = ventaRepository.findByIdVentaAndTenantId(id, tenantId)
-				.orElseThrow(() -> new RuntimeException("Venta no encontrada"));
+	    Ventas venta = ventaRepository.findByIdVentaAndTenantId(id, tenantId)
+	            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Venta no encontrada"));
 
-		if (!"RESERVADA".equals(venta.getEstado()))
-			throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se pueden editar reservadas");
-		
-		// Recalcular detalles y total
-		List<DetalleVenta> nuevosDetalles = new ArrayList<>();
-		BigDecimal total = BigDecimal.ZERO;
+	    if (!"RESERVADA".equals(venta.getEstado()))
+	        throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se pueden editar reservadas");
+	    if (detalles == null || detalles.isEmpty())
+	        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La venta no puede quedar sin productos");
 
-		for (VentaRequest.DetalleRequest d : detalles) {
-			productos producto = productoRepository.findByIdProdAndTenantId(d.getIdProducto(), tenantId)
-					.orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+	    // Precios que ya tenía cada producto en esta venta (se respetan)
+	    Map<Long, BigDecimal> originales = venta.getDetalles().stream()
+	            .filter(x -> x.getProducto() != null)
+	            .collect(Collectors.toMap(x -> x.getProducto().getIdProd(), DetalleVenta::getPrecio_unitario, (a, b) -> a));
 
-			BigDecimal subtotal = producto.getPrecioActual().multiply(BigDecimal.valueOf(d.getCantidad()));
+	    List<DetalleVenta> nuevosDetalles = new ArrayList<>();
+	    BigDecimal total = BigDecimal.ZERO;
 
-			nuevosDetalles.add(DetalleVenta.builder().venta(venta).producto(producto).cantidad(d.getCantidad())
-					.precio_unitario(producto.getPrecioActual()).subtotal(subtotal).build());
+	    for (VentaRequest.DetalleRequest d : detalles) {
+	        if (d.getCantidad() == null || d.getCantidad() <= 0)
+	            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cantidad inválida");
 
-			total = total.add(subtotal);
-		}
+	        productos producto = productoRepository.findByIdProdAndTenantId(d.getIdProducto(), tenantId)
+	                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
 
-		// Si hay descuento, recalcular con descuento
-		if (venta.getDescuento() != null && venta.getDescuento() > 0) {
-			BigDecimal porcentajeDescuento = BigDecimal.valueOf(venta.getDescuento());
-			BigDecimal montoDescuento = total.multiply(porcentajeDescuento).divide(BigDecimal.valueOf(100));
-			total = total.subtract(montoDescuento);
-		}
+	        boolean variable = "PRECIO_VARIABLE".equals(String.valueOf(producto.getTipoPrecio()))
+	                || (producto.getTipoPrecio() == null
+	                    && (producto.getPrecioActual() == null || producto.getPrecioActual().signum() == 0));
 
-		venta.getDetalles().clear();
-		venta.getDetalles().addAll(nuevosDetalles);
-		venta.setTotal(total);
+	        BigDecimal pu;
+	        if (originales.containsKey(producto.getIdProd())) pu = originales.get(producto.getIdProd());
+	        else if (variable) pu = d.getPrecioUnitario();
+	        else pu = producto.getPrecioActual();
 
-		return ventaRepository.save(venta);
+	        if (pu == null || pu.signum() <= 0)
+	            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Precio inválido: " + producto.getNombreProducto());
+
+	        BigDecimal subtotal = pu.multiply(BigDecimal.valueOf(d.getCantidad()));
+	        nuevosDetalles.add(DetalleVenta.builder().venta(venta).producto(producto).cantidad(d.getCantidad())
+	                .precio_unitario(pu).subtotal(subtotal).build());
+	        total = total.add(subtotal);
+	    }
+
+	    if (venta.getDescuento() != null && venta.getDescuento() > 0) {
+	        BigDecimal monto = total.multiply(BigDecimal.valueOf(venta.getDescuento())).divide(BigDecimal.valueOf(100));
+	        total = total.subtract(monto);
+	    }
+
+	    venta.getDetalles().clear();
+	    venta.getDetalles().addAll(nuevosDetalles);
+	    venta.setTotal(total.setScale(2, RoundingMode.HALF_UP));
+
+	    return ventaRepository.save(venta);
 	}
 
 	// DELETE - borrar ventas en lote

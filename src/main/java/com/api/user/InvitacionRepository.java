@@ -22,4 +22,6 @@ public interface InvitacionRepository extends CrudRepository<InvitacionEmpleado,
 	@Transactional
 	@Query("DELETE FROM InvitacionEmpleado i WHERE i.tenant.id = :tenantId")
 	void deleteAllByTenantId(@Param("tenantId") Long tenantId);
+	
+	boolean existsByEmailAndTenantIdAndEstado(String email, Long tenantId, String estado);
 }

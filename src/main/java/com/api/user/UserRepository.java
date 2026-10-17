@@ -30,4 +30,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	List<User> findElegiblesParaEncuesta(@Param("limite") LocalDateTime limite);
 	
 	Optional<User> findByTenant_IdAndRol_Id(Long tenantId, Integer rolId);
+	
+	boolean existsByEmail(String email);
 }

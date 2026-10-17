@@ -3,6 +3,7 @@ package com.api.entidad;
 import java.time.LocalTime;
 
 import com.api.user.User;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -31,6 +32,7 @@ public class HorarioEmpleado {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
     private User user;
     
     @Column(name = "dia_semana", nullable = false)
