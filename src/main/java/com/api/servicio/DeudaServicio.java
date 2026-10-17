@@ -138,6 +138,7 @@ public class DeudaServicio {
 			venta.put("pagado", pagado);
 			venta.put("pendiente", pendienteVenta);
 			venta.put("productos", items);
+			venta.put("deudaOriginal", deudaVenta);
 			ventasOut.add(venta);
 		}
 

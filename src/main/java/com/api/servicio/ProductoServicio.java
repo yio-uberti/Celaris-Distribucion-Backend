@@ -71,6 +71,10 @@ public class ProductoServicio {
 	        .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
 	    Long tenantId = user.getTenant().getId();
+	    
+	    if (productoRepository.existsByNombreProductoAndTenantId(producto.getNombreProducto().trim(), tenantId))
+	        throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un producto con ese nombre");
+	    
 	    producto.setTenantId(tenantId);
 	    
 	    if (!planLimiteService.tenantEsPremium(tenantId)) {

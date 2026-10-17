@@ -19,6 +19,8 @@ public interface repoProducto extends CrudRepository<productos, Long> {
 
 	boolean existsByNombreProductoAndTenantIdAndIdProdNot(String nuevo, Long tenantId, Long id);
 	
+	boolean existsByNombreProductoAndTenantId(String nombreProducto, Long tenantId);
+	
 	@Modifying
 	void deleteByNombreProductoAndTenantId(String nombre, Long tenantId);
 	
