@@ -22,7 +22,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/register", "/auth/login", "/auth/formulario", "/auth/me", "/auth/activar-invitacion", "/mercado-pago/webhook", "/activar", "/error").permitAll()
+                .requestMatchers("/auth/register", "/auth/login", "/auth/formulario", "/auth/me", "/auth/activar-invitacion", "/mercado-pago/webhook", "/activar", "/error", "/billing/rtdn").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(firebaseAuthFilter, UsernamePasswordAuthenticationFilter.class);

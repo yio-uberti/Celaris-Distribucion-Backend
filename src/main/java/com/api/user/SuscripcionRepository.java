@@ -42,4 +42,7 @@ public interface SuscripcionRepository extends CrudRepository<Suscripcion, Integ
     
  // SuscripcionRepository
     Optional<Suscripcion> findFirstByUser_IdAndEstadoOrderByInicioDesc(Long userId, String estado);
+    
+    //Para suscripcion de play store
+    Optional<Suscripcion> findByTokenPago(String token);
 }
