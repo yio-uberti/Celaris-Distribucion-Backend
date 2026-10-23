@@ -19,6 +19,9 @@ import com.api.user.User;
 import com.api.user.UserRepository;
 import com.google.api.services.androidpublisher.model.SubscriptionPurchaseV2;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class BillingService {
 
@@ -35,11 +38,29 @@ public class BillingService {
 	    public void sincronizar(String purchaseToken, String productId, String uidSolicitante) throws IOException {
 	        SubscriptionPurchaseV2 sp = play.consultar(purchaseToken);
 
-	        String uid = sp.getExternalAccountIdentifiers() != null
+//	        String uid = sp.getExternalAccountIdentifiers() != null
+//	            ? sp.getExternalAccountIdentifiers().getObfuscatedExternalAccountId() : null;
+//	        log.info("PLAY RESPONSE: {}", sp.toPrettyString());
+//	        if (uid == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Compra sin usuario asociado");
+//	        if (uidSolicitante != null && !uid.equals(uidSolicitante))
+//	            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La compra pertenece a otro usuario");
+	        
+	        log.info("PLAY RESPONSE: {}", sp.toPrettyString());
+
+	        String uidCompra = sp.getExternalAccountIdentifiers() != null
 	            ? sp.getExternalAccountIdentifiers().getObfuscatedExternalAccountId() : null;
-	        if (uid == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Compra sin usuario asociado");
-	        if (uidSolicitante != null && !uid.equals(uidSolicitante))
-	            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La compra pertenece a otro usuario");
+
+	        String uid;
+	        if (uidSolicitante != null) {
+	            if (uidCompra != null && !uidCompra.equals(uidSolicitante))
+	                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La compra pertenece a otro usuario");
+	            uid = uidSolicitante;
+	        } else {
+	            Suscripcion existente = suscripcionRepository.findByTokenPago(purchaseToken).orElse(null);
+	            if (existente != null) uid = existente.getUser().getFirebaseUid();
+	            else if (uidCompra != null) uid = uidCompra;
+	            else throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Compra sin usuario asociado");
+	        }
 
 	        User user = userRepository.findByFirebaseUid(uid)
 	            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
