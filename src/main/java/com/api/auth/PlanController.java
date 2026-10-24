@@ -3,11 +3,11 @@ package com.api.auth;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.api.repositorio.PlanRepository;
-import com.api.user.Plan;
 import com.api.user.PlanPricing;
 import com.api.user.PlanPricingRepository;
 import com.api.user.Suscripcion;
@@ -59,38 +58,26 @@ public class PlanController {
 	}
 
 	@GetMapping("/mi-plan")
+	@Transactional
 	public ResponseEntity<?> getMiPlan(HttpServletRequest request) {
 	    String uid = (String) request.getAttribute("firebaseUid");
 	    User user = userRepository.findByFirebaseUid(uid)
 	            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-	    Optional<Suscripcion> suscripcionActiva = suscripcionService.getSuscripcionActiva(user);
+	    Suscripcion s = suscripcionRepository
+	            .findFirstByUser_IdAndEstadoOrderByInicioDesc(user.getId(), "ACTIVA")
+	            .orElseGet(() -> suscripcionService.asignarFree(user));
 
-	    // Caso: no tiene ninguna suscripción activa registrada
-	    if (suscripcionActiva.isEmpty()) {
-	        return ResponseEntity.ok(new PlanResponse("FREE", "SIN_SUSCRIPCION", null));
-	    }
-
-	    Suscripcion s = suscripcionActiva.get();
-	    String estadoCalculado;
-
+	    // Si venció: marcar, dar FREE y devolver FREE
 	    if (s.getVencimiento() != null && s.getVencimiento().isBefore(LocalDateTime.now())) {
 	        s.setEstado("VENCIDA");
 	        suscripcionRepository.save(s);
-	        suscripcionService.vencerSuscripcionesExpiradas(); // mantiene sincronizado usuario.plan_id (dato secundario)
-	        estadoCalculado = "VENCIDA";
-
-	        // tras vencer, el plan real pasa a ser FREE
-	        Plan free = planRepository.findById(1).orElseThrow();
-	        return ResponseEntity.ok(new PlanResponse(free.getNombre(), estadoCalculado, null));
+	        Suscripcion free = suscripcionService.asignarFree(user);
+	        return ResponseEntity.ok(new PlanResponse(free.getPlan().getNombre(), "ACTIVA", null));
 	    }
 
-	    estadoCalculado = s.getEstado();
-
-	    // 🔑 acá está el cambio clave: el nombre del plan sale de la SUSCRIPCIÓN, no del usuario
-	    return ResponseEntity.ok(new PlanResponse(s.getPlan().getNombre(), estadoCalculado, null));
+	    return ResponseEntity.ok(new PlanResponse(s.getPlan().getNombre(), s.getEstado(), null));
 	}
-
 	@PostMapping("/iniciar")
 	public ResponseEntity<?> iniciarPlanFree(HttpServletRequest request) {
 		String uid = (String) request.getAttribute("firebaseUid");
