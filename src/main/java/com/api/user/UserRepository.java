@@ -32,4 +32,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 	Optional<User> findByTenant_IdAndRol_Id(Long tenantId, Integer rolId);
 	
 	boolean existsByEmail(String email);
+	
+	Optional<User> findFirstByEmailIgnoreCase(String email);
 }

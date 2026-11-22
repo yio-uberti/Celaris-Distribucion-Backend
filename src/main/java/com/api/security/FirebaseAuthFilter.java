@@ -44,6 +44,7 @@ public class FirebaseAuthFilter extends OncePerRequestFilter {
 			String uid = decoded.getUid();
 			request.setAttribute("firebaseUid", uid);
 			request.setAttribute("email", decoded.getEmail());
+			request.setAttribute("emailVerified", decoded.isEmailVerified());
 
 			User user = userRepository.findByFirebaseUid(uid).orElse(null);
 			if (user != null) {

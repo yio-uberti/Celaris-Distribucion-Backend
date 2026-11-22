@@ -62,38 +62,50 @@ public class AuthService {
 				.getTenant().getId();
 	}
 
+	@Transactional
 	public boolean registerIfNotExists(HttpServletRequest request) {
 
 		String firebaseUid = (String) request.getAttribute("firebaseUid");
 		String email = (String) request.getAttribute("email");
+		Boolean emailVerified = (Boolean) request.getAttribute("emailVerified");
 
 		System.out.println("UID:" + firebaseUid);
 		System.out.println("email:" + email);
 
 		if (firebaseUid == null || email == null)
 			return false;
-		// Si ya existe en BD → OK, no hacer nada
-		if (userRepository.existsByFirebaseUid(firebaseUid))
-			return false;
 
-		// Si llegó acá, Firebase validó el token (el filtro JWT ya lo hizo)
-		// pero no existe en BD → crearlo
-		Tenant tenant = new Tenant();
-		tenant.setActivo(true);
-		tenant.setFechaAlta(LocalDateTime.now());
-		tenant.setTipo("PENDIENTE");
-		System.out.println("Proveedor:" + email);
-		tenantRepository.save(tenant);
+		// Cuenta sin email verificado: no se crea nada en la BD
+	    if (!Boolean.TRUE.equals(emailVerified)) return false;
 
-		User user = new User();
-		user.setFirebaseUid(firebaseUid);
-		user.setEmail(email);
-		user.setTenant(tenant);
-		// rol OWNER por defecto (id=1)
-		user.setRol(rolRepository.findById(1).orElseThrow());
-		userRepository.save(user);
+	    email = email.trim().toLowerCase();
 
-		return true;
+	    if (userRepository.existsByFirebaseUid(firebaseUid)) return false;
+
+	    // Ya existe una fila con ese email (ej: borrado de Firebase y vuelve a entrar):
+	    // reutilizarla en vez de crear otra. Seguro porque el email está verificado.
+	    Optional<User> porEmail = userRepository.findFirstByEmailIgnoreCase(email);
+	    if (porEmail.isPresent()) {
+	        User existente = porEmail.get();
+	        existente.setFirebaseUid(firebaseUid);
+	        userRepository.save(existente);
+	        return existente.getNombre() == null; // true = todavía debe completar el formulario
+	    }
+
+	    Tenant tenant = new Tenant();
+	    tenant.setActivo(true);
+	    tenant.setFechaAlta(LocalDateTime.now());
+	    tenant.setTipo("PENDIENTE");
+	    tenantRepository.save(tenant);
+
+	    User user = new User();
+	    user.setFirebaseUid(firebaseUid);
+	    user.setEmail(email);
+	    user.setTenant(tenant);
+	    user.setRol(rolRepository.findById(1).orElseThrow());
+	    userRepository.save(user);
+
+	    return true;
 	}
 
 	@Transactional
