@@ -94,6 +94,7 @@ public class AuthController {
 	    return ResponseEntity.ok(response);
 	}
 
+//	recordar para que era este metodo
 	@GetMapping("/productos-sin-precio")
 	public ResponseEntity<Boolean> tieneProductosSinPrecio(HttpServletRequest request) {
 		boolean sinPrecio = authService.tieneProductosSinPrecio(request);

@@ -150,7 +150,7 @@ public class AuthService {
 				r.setNombre(formulario.getRubro());
 				rubroRepository.save(r);
 			}
-			asignarProductosCatalogo(userData);
+//			asignarProductosCatalogo(userData);
 		}
 
 		// 🔥 GUARDAR ORIGEN DE REFERENCIA
